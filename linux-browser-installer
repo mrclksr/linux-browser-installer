@@ -186,9 +186,16 @@ cleanup()
 
 usage()
 {
-	echo "Usage: $0 brave|chrome"
+	echo "Usage: $0 <install|clean> <brave|chrome>"
 	exit 1
 }
+
+if [ $(id -u) -ne 0 ]; then
+   echo "This script must be run as root" 1>&2
+   exit 1
+fi
+
+[ $# -eq 0 ] && usage
 
 while [ $# -gt 0 ]; do
 	case "$1" in
