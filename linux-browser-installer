@@ -1,0 +1,220 @@
+#!/bin/sh
+
+jail_path=/compat/ubuntu
+ubuntu_version=bionic
+ld_version=2.27
+
+chrome_jail_wrapper="jail/bin/chrome"
+chrome_wrapper="bin/chrome"
+chrome_desktop_file="chrome.desktop"
+
+brave_jail_wrapper="jail/bin/brave"
+brave_wrapper="bin/brave"
+brave_desktop_file="brave.desktop"
+
+apt_packages="gnupg pulseaudio fonts-symbola ttf-mscorefonts-installer"
+pkg_list="debootstrap pulseaudio"
+
+fstab_entries()
+{
+cat << FSTAB_END
+fdescfs      /dev/fd              fdescfs      rw,late           0 0
+proc         /proc                procfs       rw                0 0
+linprocfs    ${jail_path}/proc    linprocfs    rw,late           0 0
+linsysfs     ${jail_path}/sys     linsysfs     rw,late           0 0
+devfs        ${jail_path}/dev     devfs        rw,late           0 0
+fdescfs      ${jail_path}/dev/fd  fdescfs      rw,late,linrdlnk  0 0
+tmpfs        ${jail_path}/dev/shm tmpfs        rw,late,mode=1777 0 0
+/tmp         ${jail_path}/tmp     nullfs       rw,late           0 0
+/home        ${jail_path}/home    nullfs       rw,late           0 0
+FSTAB_END
+}
+
+setup_fstab()
+{
+	local cur_entries path
+
+	mount_points=$(fstab_entries | awk -F '[ \t]+' '{ print $2 }')
+	new_entries=$(for path in ${mount_points}; do
+		awk -F'[ \t]+' -v path="$path" '
+			$2 == path {
+				exit(1)
+			}
+		' < /etc/fstab && echo $path
+	done)
+	[ -z "${new_entries}" ] && return
+	cp /etc/fstab /etc/fstab.bak.$$
+	for path in ${new_entries}; do
+		fstab_entries | awk -F '[ \t]+' -v path="$path" '
+			$2 == path {
+				print $0; exit(0)
+			}
+		' >> /etc/fstab
+	done
+}
+
+mk_mount_dirs()
+{
+	local dir
+	for dir in $(fstab_entries | awk -F'[ \t]+' '{ print $2 }'); do
+		echo "mkdir -p $dir"
+		[ ! -d "${dir}" ] && mkdir -p "${dir}"
+	done
+}
+
+install_rc()
+{
+	install -m 555 rc.d/ubuntu /usr/local/etc/rc.d
+}
+
+install_steam_utils()
+{
+	pkg info --exists linux-steam-utils && return
+	pkg fetch -y -o /tmp linux-steam-utils || exit 1
+	(cd / && tar xf /tmp/All/linux-steam-utils-*.txz)
+}
+
+install_packages()
+{
+	for p in ${pkg_list}; do
+		pkg info --exists $p && continue
+		pkg install -y $p
+	done
+}
+
+fix_ld_path()
+{
+	(cd ${jail_path}/lib64 && unlink ./ld-linux-x86-64.so.2; \
+		ln -s ../lib/x86_64-linux-gnu/ld-${ld_version}.so \
+		ld-linux-x86-64.so.2)
+}
+
+install_apt_packages()
+{
+	chroot ${jail_path} /bin/bash -c 'apt update'
+	for p in ${apt_packages}; do
+		chroot ${jail_path} /bin/bash -c "apt install -y $p"
+	done
+}
+
+build_scripts()
+{
+	for s in $(find bin jail/bin rc.d -name "*.in"); do
+		sed -E "s#@JAIL_PATH@#${jail_path}#g" < $s > ${s%.in}
+	done
+}
+
+install_chrome()
+{
+	local cmd
+	cmd="apt-key add linux_signing_key.pub && apt update && "
+	cmd="${cmd} apt install -y google-chrome-stable"
+
+	if [ -x ${jail_path}/opt/google/chrome/chrome ]; then
+		echo "Chrome already installed" >&2
+		exit 1
+	fi
+	echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ " \
+	     "stable main" \
+	     > "${jail_path}/etc/apt/sources.list.d/google-chrome.list"
+	fetch -o ${jail_path} https://dl.google.com/linux/linux_signing_key.pub
+	chroot ${jail_path} /bin/bash -c "${cmd}"
+	install -m 555 ${chrome_jail_wrapper} ${jail_path}/bin
+	install -m 555 ${chrome_wrapper} /usr/local/bin
+	install -m 0644 ${chrome_desktop_file} /usr/local/share/applications
+}
+
+install_brave()
+{
+	if [ -x ${jail_path}/opt/brave.com/brave/brave ]; then
+		echo "Brave already installed" >&2
+		exit 1
+	fi
+	chroot ${jail_path} /bin/bash -c \
+		"apt install -y apt-transport-https curl"
+	chroot ${jail_path} /bin/bash -c \
+		'curl -s https://brave-browser-apt-release.s3.brave.com/brave-core.asc | apt-key --keyring /etc/apt/trusted.gpg.d/brave-browser-release.gpg add -'
+	chroot ${jail_path} /bin/bash -c \
+		'echo "deb [arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main" > /etc/apt/sources.list.d/brave-browser-release.list'
+	chroot ${jail_path} /bin/bash -c \
+		"apt update && apt install -y brave-browser"
+	install -m 555 ${brave_jail_wrapper} ${jail_path}/bin
+	install -m 555 ${brave_wrapper} /usr/local/bin
+	install -m 0644 ${brave_desktop_file} /usr/local/share/applications
+}
+
+symlink_icons()
+{
+	for i in /usr/local/share/icons/*; do
+		[ ! -d $i ] && continue
+		ln -s $i ${jail_path}/usr/share/icons
+	done
+}
+
+install_jail_base()
+{
+	[ -f ${jail_path}/etc/os-release ] && return
+	setup_fstab
+	mk_mount_dirs
+	mount -al
+	install_rc
+	sysrc linux_enable=NO
+	sysrc ubuntu_enable=YES
+	service ubuntu start
+	install_steam_utils
+	install_packages
+	debootstrap --arch=amd64 --no-check-gpg ${ubuntu_version} ${jail_path}
+	echo "APT::Cache-Start 251658240;" > \
+		${jail_path}/etc/apt/apt.conf.d/00aptitude
+	echo "deb http://archive.ubuntu.com/ubuntu/ ${ubuntu_version} " \
+	     "main restricted universe multiverse" > \
+		${jail_path}/etc/apt/sources.list
+	fix_ld_path
+	printf "0.0 0 0.0\n0\nUTC\n" > ${jail_path}/etc/adjtime
+	mount -al
+	chroot ${jail_path} /bin/bash -c "dpkg-reconfigure tzdata"
+	install_apt_packages
+	symlink_icons
+}
+
+cleanup()
+{
+	rm -f ${chrome_jail_wrapper} ${chrome_wrapper} \
+		${brave_jail_wrapper} ${brave_wrapper} \
+		rc.d/ubuntu
+}
+
+usage()
+{
+	echo "Usage: $0 brave|chrome"
+	exit 1
+}
+
+while [ $# -gt 0 ]; do
+	case "$1" in
+	install)
+		case $2 in
+		brave|chrome)
+			browser=$2
+			;;
+		*)
+			usage
+			;;
+		esac
+		shift
+		;;
+	clean)
+		cleanup
+		exit 0
+		;;
+	*)
+		usage
+		;;
+	esac
+	shift
+done
+
+build_scripts
+install_jail_base
+eval install_${browser}
+
