@@ -62,6 +62,32 @@ mk_mount_dirs()
 	done
 }
 
+umount_jail()
+{
+	mount -p | awk -F'[ \t]+' -v jail=${jail_path} '
+		$2 ~ sprintf("^%s", jail) {
+			mp[n++] = $2
+		}
+		END {
+			while (--n >= 0) print mp[n]
+		}
+	' | xargs -I "{}" umount {} || exit 1
+}
+
+clean_fstab()
+{
+	local tmp
+	tmp=$(mktemp /etc/fstab.XXXXXX)
+	[ $? -ne 0 -o -z "${tmp}" ] && exit 1
+	cp -a /etc/fstab "${tmp}"
+	awk -F'[ \t]+' -v jail=${jail_path} '
+		$2 !~ sprintf("^%s", jail) {
+			print $0
+		}
+	' < /etc/fstab > "${tmp}"
+	mv "${tmp}" /etc/fstab
+}
+
 install_rc()
 {
 	install -m 555 rc.d/ubuntu /usr/local/etc/rc.d
@@ -71,7 +97,9 @@ install_steam_utils()
 {
 	pkg info --exists linux-steam-utils && return
 	pkg fetch -y -o /tmp linux-steam-utils || exit 1
-	(cd / && tar xf /tmp/All/linux-steam-utils-*.txz)
+	(cd / && tar -xf /tmp/All/linux-steam-utils-*.txz \
+		--exclude '^+COMPACT_MANIFEST' \
+		--exclude '^+MANIFEST')
 }
 
 install_packages()
@@ -84,14 +112,16 @@ install_packages()
 
 fix_ld_path()
 {
-	(cd ${jail_path}/lib64 && unlink ./ld-linux-x86-64.so.2; \
-		ln -s ../lib/x86_64-linux-gnu/ld-${ld_version}.so \
-		ld-linux-x86-64.so.2)
+	(cd ${jail_path}/lib64 && \
+		(unlink ./ld-linux-x86-64.so.2; \
+			ln -s ../lib/x86_64-linux-gnu/ld-${ld_version}.so \
+			ld-linux-x86-64.so.2))
 }
 
 install_apt_packages()
 {
 	chroot ${jail_path} /bin/bash -c 'apt update'
+	chroot ${jail_path} /bin/bash -c 'apt remove -y rsyslog'
 	for p in ${apt_packages}; do
 		chroot ${jail_path} /bin/bash -c "apt install -y $p"
 	done
@@ -124,6 +154,14 @@ install_chrome()
 	install -m 0644 ${chrome_desktop_file} /usr/local/share/applications
 }
 
+deinstall_chrome()
+{
+	chroot ${jail_path} /bin/bash -c "apt remove -y google-chrome-stable"
+	rm -f /usr/local/share/applications/${chrome_desktop_file}
+	rm -f /usr/local/bin/${chrome_wrapper}
+	rm -rf ${jail_path}/bin/${chrome_jail_wrapper}
+}
+
 install_brave()
 {
 	if [ -x ${jail_path}/opt/brave.com/brave/brave ]; then
@@ -141,6 +179,14 @@ install_brave()
 	install -m 555 ${brave_jail_wrapper} ${jail_path}/bin
 	install -m 555 ${brave_wrapper} /usr/local/bin
 	install -m 0644 ${brave_desktop_file} /usr/local/share/applications
+}
+
+deinstall_brave()
+{
+	chroot ${jail_path} /bin/bash -c "apt remove -y brave-browser"
+	rm -f /usr/local/share/applications/${brave_desktop_file}
+	rm -f /usr/local/bin/${brave_wrapper}
+	rm -rf ${jail_path}/bin/${brave_jail_wrapper}
 }
 
 symlink_icons()
@@ -172,9 +218,33 @@ install_jail_base()
 	fix_ld_path
 	printf "0.0 0 0.0\n0\nUTC\n" > ${jail_path}/etc/adjtime
 	mount -al
-	chroot ${jail_path} /bin/bash -c "dpkg-reconfigure tzdata"
+	cp /var/db/zoneinfo ${jail_path}/etc/timezone
+	chroot ${jail_path} /bin/bash -c \
+		"dpkg-reconfigure --frontend noninteractive tzdata"
 	install_apt_packages
 	symlink_icons
+}
+
+deinstall_jail_base()
+{
+	local path
+	path=$(realpath ${jail_path})
+	[ $? -ne 0 ] && exit 1
+
+	if [ "${path}" = "/" ]; then
+		echo "jail_path must not be '/'" >&2
+		exit 1
+	fi
+	umount_jail
+	clean_fstab
+	rm -rf "${path}"
+	rm -f /usr/local/etc/rc.d/ubuntu
+	sysrc -x ubuntu_enable
+}
+
+upgrade_jail()
+{
+	chroot ${jail_path} /bin/bash -c "apt update && apt upgrade"
 }
 
 cleanup()
@@ -186,13 +256,16 @@ cleanup()
 
 usage()
 {
-	echo "Usage: $0 <install|clean> <brave|chrome>"
+	echo "Usage: $0 install <brave|chrome>"
+	echo "       $0 deinstall <brave|chrome>"
+	echo "       $0 jail <create|upgrade|delete>"
+	echo "       $0 clean"
 	exit 1
 }
 
 if [ $(id -u) -ne 0 ]; then
-   echo "This script must be run as root" 1>&2
-   exit 1
+	echo "This script must be run as root" 1>&2
+	exit 1
 fi
 
 [ $# -eq 0 ] && usage
@@ -203,6 +276,22 @@ while [ $# -gt 0 ]; do
 		case $2 in
 		brave|chrome)
 			browser=$2
+			build_scripts
+			install_jail_base
+			eval install_${browser}
+			;;
+		*)
+			usage
+			;;
+		esac
+		shift
+		;;
+	deinstall)
+		case $2 in
+		brave|chrome)
+			browser=$2
+			eval deinstall_${browser}
+			exit 0
 			;;
 		*)
 			usage
@@ -214,14 +303,30 @@ while [ $# -gt 0 ]; do
 		cleanup
 		exit 0
 		;;
+	jail)
+		case $2 in
+		create)
+			install_jail_base
+			exit 0
+			;;
+		delete)
+			deinstall_jail_base
+			exit 0
+			;;
+		upgrade)
+			upgrade_jail
+			exit 0
+			;;
+		*)
+			usage
+			;;
+		esac
+		shift
+		;;
 	*)
 		usage
 		;;
 	esac
 	shift
 done
-
-build_scripts
-install_jail_base
-eval install_${browser}
 
