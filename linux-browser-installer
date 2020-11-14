@@ -142,10 +142,11 @@ install_chrome()
 		exit 1
 	fi
 	echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ " \
-	     "stable main" \
-	     > "${jail_path}/etc/apt/sources.list.d/google-chrome.list"
+	     "stable main" > \
+		"${jail_path}/etc/apt/sources.list.d/google-chrome.list"
 	fetch -o ${jail_path} https://dl.google.com/linux/linux_signing_key.pub
 	chroot ${jail_path} /bin/bash -c "${cmd}"
+	rmdir "${jail_path}/${prefix}/share/fonts"
 	install -m 555 jail/bin/chrome "${jail_bindir}"
 	install -m 555 bin/chrome "${bindir}"
 	install -m 0644 chrome.desktop "${appsdir}"
@@ -173,6 +174,7 @@ install_brave()
 		'echo "deb [arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main" > /etc/apt/sources.list.d/brave-browser-release.list'
 	chroot ${jail_path} /bin/bash -c \
 		"apt update && apt install -y brave-browser"
+	rmdir "${jail_path}/${prefix}/share/fonts"
 	install -m 555 jail/bin/brave "${jail_bindir}"
 	install -m 555 bin/brave "${bindir}"
 	install -m 0644 brave.desktop "${appsdir}"
@@ -196,19 +198,6 @@ symlink_icons()
 		name=$(basename $i)
 		[ -e ${jail_path}/usr/share/icons/${name} ] && continue
 		ln -s $i ${jail_path}/usr/share/icons
-	done
-}
-
-symlink_fonts()
-{
-	local name i
-	[ ! -d ${jail_path}/usr/share/fonts ] && \
-		mkdir -p ${jail_path}/usr/share/fonts
-	for i in ${prefix}/share/fonts/*; do
-		[ ! -d $i ] && continue
-		name=$(basename $i)
-		[ -e ${jail_path}/usr/share/fonts/${name} ] && continue
-		ln -s $i ${jail_path}/usr/share/fonts/
 	done
 }
 
@@ -238,7 +227,6 @@ install_jail_base()
 		"dpkg-reconfigure --frontend noninteractive tzdata"
 	install_apt_packages
 	symlink_icons
-	symlink_fonts
 }
 
 deinstall_jail_base()
@@ -273,7 +261,7 @@ usage()
 	echo "Usage: $0 install <brave|chrome>"
 	echo "       $0 deinstall <brave|chrome>"
 	echo "       $0 jail <create|upgrade|delete>"
-	echo "       $0 symlink <fonts|icons>"
+	echo "       $0 symlink icons"
 	echo "       $0 clean"
 	exit 1
 }
@@ -341,7 +329,7 @@ while [ $# -gt 0 ]; do
 		;;
 	symlink)
 		case $2 in
-		icons|fonts)
+		icons)
 			eval symlink_$2
 			exit 0
 			;;
