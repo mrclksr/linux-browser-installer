@@ -69,14 +69,7 @@ unmounts all the jail's filesystems, and removes their
 entries from `/etc/fstab`, deletes the rc script, and removes its
 variable(s) from `/etc/rc.conf`.
 
-#### Update symlinks for icons and fonts
-
-````
-# ./linux-browser-installer symlink fonts
-````
-This command updates the symlinks from `$prefix/share/fonts`
-`$jail_path/usr/share/fonts`. Use this after installing new fonts
-to make them available to applications in the jail.
+#### Update symlinks for icons
 
 ````
 # ./linux-browser-installer symlink icons
