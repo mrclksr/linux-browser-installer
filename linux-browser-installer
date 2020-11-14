@@ -1,18 +1,15 @@
 #!/bin/sh
 
+prefix=/usr/local
 jail_path=/compat/ubuntu
 ubuntu_version=bionic
 ld_version=2.27
 
-chrome_jail_wrapper="jail/bin/chrome"
-chrome_wrapper="bin/chrome"
-chrome_desktop_file="chrome.desktop"
+bindir="${prefix}/bin"
+appsdir="${prefix}/share/applications"
+jail_bindir="${jail_path}/bin"
 
-brave_jail_wrapper="jail/bin/brave"
-brave_wrapper="bin/brave"
-brave_desktop_file="brave.desktop"
-
-apt_packages="gnupg pulseaudio fonts-symbola ttf-mscorefonts-installer"
+apt_packages="gnupg pulseaudio"
 pkg_list="debootstrap pulseaudio"
 
 fstab_entries()
@@ -90,7 +87,7 @@ clean_fstab()
 
 install_rc()
 {
-	install -m 555 rc.d/ubuntu /usr/local/etc/rc.d
+	install -m 555 rc.d/ubuntu "${prefix}/etc/rc.d"
 }
 
 install_steam_utils()
@@ -149,17 +146,17 @@ install_chrome()
 	     > "${jail_path}/etc/apt/sources.list.d/google-chrome.list"
 	fetch -o ${jail_path} https://dl.google.com/linux/linux_signing_key.pub
 	chroot ${jail_path} /bin/bash -c "${cmd}"
-	install -m 555 ${chrome_jail_wrapper} ${jail_path}/bin
-	install -m 555 ${chrome_wrapper} /usr/local/bin
-	install -m 0644 ${chrome_desktop_file} /usr/local/share/applications
+	install -m 555 jail/bin/chrome "${jail_bindir}"
+	install -m 555 bin/chrome "${bindir}"
+	install -m 0644 chrome.desktop "${appsdir}"
 }
 
 deinstall_chrome()
 {
 	chroot ${jail_path} /bin/bash -c "apt remove -y google-chrome-stable"
-	rm -f /usr/local/share/applications/${chrome_desktop_file}
-	rm -f /usr/local/bin/${chrome_wrapper}
-	rm -rf ${jail_path}/bin/${chrome_jail_wrapper}
+	rm -f "${appsdir}/chrome.desktop"
+	rm -f "${bindir}/chrome"
+	rm -f "${jail_bindir}/chrome"
 }
 
 install_brave()
@@ -176,24 +173,42 @@ install_brave()
 		'echo "deb [arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main" > /etc/apt/sources.list.d/brave-browser-release.list'
 	chroot ${jail_path} /bin/bash -c \
 		"apt update && apt install -y brave-browser"
-	install -m 555 ${brave_jail_wrapper} ${jail_path}/bin
-	install -m 555 ${brave_wrapper} /usr/local/bin
-	install -m 0644 ${brave_desktop_file} /usr/local/share/applications
+	install -m 555 jail/bin/brave "${jail_bindir}"
+	install -m 555 bin/brave "${bindir}"
+	install -m 0644 brave.desktop "${appsdir}"
 }
 
 deinstall_brave()
 {
 	chroot ${jail_path} /bin/bash -c "apt remove -y brave-browser"
-	rm -f /usr/local/share/applications/${brave_desktop_file}
-	rm -f /usr/local/bin/${brave_wrapper}
-	rm -rf ${jail_path}/bin/${brave_jail_wrapper}
+	rm -f "${appsdir}/brave.desktop"
+	rm -f "${bindir}/brave"
+	rm -f "${jail_bindir}/brave"
 }
 
 symlink_icons()
 {
-	for i in /usr/local/share/icons/*; do
+	local name i
+	[ ! -d ${jail_path}/usr/share/icons ] && \
+		mkdir -p ${jail_path}/usr/share/icons
+	for i in ${prefix}/share/icons/*; do
 		[ ! -d $i ] && continue
+		name=$(basename $i)
+		[ -e ${jail_path}/usr/share/icons/${name} ] && continue
 		ln -s $i ${jail_path}/usr/share/icons
+	done
+}
+
+symlink_fonts()
+{
+	local name i
+	[ ! -d ${jail_path}/usr/share/fonts ] && \
+		mkdir -p ${jail_path}/usr/share/fonts
+	for i in ${prefix}/share/fonts/*; do
+		[ ! -d $i ] && continue
+		name=$(basename $i)
+		[ -e ${jail_path}/usr/share/fonts/${name} ] && continue
+		ln -s $i ${jail_path}/usr/share/fonts/
 	done
 }
 
@@ -223,6 +238,7 @@ install_jail_base()
 		"dpkg-reconfigure --frontend noninteractive tzdata"
 	install_apt_packages
 	symlink_icons
+	symlink_fonts
 }
 
 deinstall_jail_base()
@@ -238,7 +254,7 @@ deinstall_jail_base()
 	umount_jail
 	clean_fstab
 	rm -rf "${path}"
-	rm -f /usr/local/etc/rc.d/ubuntu
+	rm -f "${prefix}/etc/rc.d/ubuntu"
 	sysrc -x ubuntu_enable
 }
 
@@ -249,9 +265,7 @@ upgrade_jail()
 
 cleanup()
 {
-	rm -f ${chrome_jail_wrapper} ${chrome_wrapper} \
-		${brave_jail_wrapper} ${brave_wrapper} \
-		rc.d/ubuntu
+	rm -f bin/chrome bin/brave jail/bin/chrome jail/bin/brave rc.d/ubuntu
 }
 
 usage()
@@ -259,6 +273,7 @@ usage()
 	echo "Usage: $0 install <brave|chrome>"
 	echo "       $0 deinstall <brave|chrome>"
 	echo "       $0 jail <create|upgrade|delete>"
+	echo "       $0 symlink <fonts|icons>"
 	echo "       $0 clean"
 	exit 1
 }
@@ -306,6 +321,7 @@ while [ $# -gt 0 ]; do
 	jail)
 		case $2 in
 		create)
+			build_scripts
 			install_jail_base
 			exit 0
 			;;
@@ -315,6 +331,18 @@ while [ $# -gt 0 ]; do
 			;;
 		upgrade)
 			upgrade_jail
+			exit 0
+			;;
+		*)
+			usage
+			;;
+		esac
+		shift
+		;;
+	symlink)
+		case $2 in
+		icons|fonts)
+			eval symlink_$2
 			exit 0
 			;;
 		*)
