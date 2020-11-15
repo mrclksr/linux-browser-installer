@@ -181,7 +181,7 @@ symlink_themes()
 	for i in ${prefix}/share/themes/*; do
 		[ ! -d $i ] && continue
 		name=$(basename $i)
-		[ -e ${jail_path}/usr/share/icons/${name} ] && continue
+		[ -e ${jail_path}/usr/share/themes/${name} ] && continue
 		ln -s $i ${jail_path}/usr/share/themes
 	done
 }
