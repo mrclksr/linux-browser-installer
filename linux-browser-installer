@@ -117,7 +117,8 @@ install_chrome()
 		"${jail_path}/etc/apt/sources.list.d/google-chrome.list"
 	fetch -o ${jail_path} https://dl.google.com/linux/linux_signing_key.pub
 	chroot ${jail_path} /bin/bash -c "${cmd}"
-	rmdir "${jail_path}/${prefix}/share/fonts"
+	[ -d "${jail_path}/${prefix}/share/fonts" ] && \
+		rmdir "${jail_path}/${prefix}/share/fonts"
 	install -m 555 jail/bin/chrome "${jail_bindir}"
 	install -m 555 bin/chrome "${bindir}"
 	install -m 0644 chrome.desktop "${appsdir}"
