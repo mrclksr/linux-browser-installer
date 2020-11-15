@@ -215,13 +215,11 @@ install_jail_base()
 	     "main restricted universe multiverse" > \
 		${jail_path}/etc/apt/sources.list
 	fix_ld_path
-	printf "0.0 0 0.0\n0\nUTC\n" > ${jail_path}/etc/adjtime
-	mount -al
-	cp /var/db/zoneinfo ${jail_path}/etc/timezone
-	chroot ${jail_path} /bin/bash -c \
-		"dpkg-reconfigure --frontend noninteractive tzdata"
+	set_timezone
+	service ubuntu start
 	install_apt_packages
 	symlink_icons
+	symlink_themes
 }
 
 deinstall_jail_base()
@@ -255,7 +253,7 @@ usage()
 	echo "Usage: $0 install <brave|chrome>"
 	echo "       $0 deinstall <brave|chrome>"
 	echo "       $0 jail <create|upgrade|delete>"
-	echo "       $0 symlink icons"
+	echo "       $0 symlink <icons|themes>"
 	echo "       $0 clean"
 	exit 1
 }
@@ -323,7 +321,7 @@ while [ $# -gt 0 ]; do
 		;;
 	symlink)
 		case $2 in
-		icons)
+		icons|themes)
 			eval symlink_$2
 			exit 0
 			;;
