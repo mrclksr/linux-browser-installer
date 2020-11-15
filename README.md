@@ -65,11 +65,12 @@ desktop file.
 # ./linux-browser-installer jail delete
 ````
 Before deleting the entire jail under `$jail_path`, this command
-unmounts all the jail's filesystems, and removes their
-entries from `/etc/fstab`, deletes the rc script, and removes its
+unmounts all the jail's filesystems, deletes the rc script, and removes its
 variable(s) from `/etc/rc.conf`.
 
-#### Update symlinks for icons
+#### Update symlinks
+
+##### For icons
 
 ````
 # ./linux-browser-installer symlink icons
@@ -77,6 +78,15 @@ variable(s) from `/etc/rc.conf`.
 
 This command updates the symlinks from `$prefix/share/icons` to
 `$jail_path/usr/share/icons`. Use this after installing new icons
+to make them available to applications in the jail.
+
+##### For themes
+````
+# ./linux-browser-installer symlink themes
+````
+
+This command updates the symlinks from `$prefix/share/themes` to
+`$jail_path/usr/share/themes`. Use this after installing new themes
 to make them available to applications in the jail.
 
 #### Delete working files from current directory
