@@ -12,77 +12,48 @@ jail_bindir="${jail_path}/bin"
 apt_packages="gnupg pulseaudio"
 pkg_list="debootstrap pulseaudio"
 
-fstab_entries()
-{
-cat << FSTAB_END
-fdescfs      /dev/fd              fdescfs      rw,late           0 0
-proc         /proc                procfs       rw                0 0
-linprocfs    ${jail_path}/proc    linprocfs    rw,late           0 0
-linsysfs     ${jail_path}/sys     linsysfs     rw,late           0 0
-devfs        ${jail_path}/dev     devfs        rw,late           0 0
-fdescfs      ${jail_path}/dev/fd  fdescfs      rw,late,linrdlnk  0 0
-tmpfs        ${jail_path}/dev/shm tmpfs        rw,late,mode=1777 0 0
-/tmp         ${jail_path}/tmp     nullfs       rw,late           0 0
-/home        ${jail_path}/home    nullfs       rw,late           0 0
-FSTAB_END
-}
-
-setup_fstab()
-{
-	local cur_entries path
-
-	mount_points=$(fstab_entries | awk -F '[ \t]+' '{ print $2 }')
-	new_entries=$(for path in ${mount_points}; do
-		awk -F'[ \t]+' -v path="$path" '
-			$2 == path {
-				exit(1)
-			}
-		' < /etc/fstab && echo $path
-	done)
-	[ -z "${new_entries}" ] && return
-	cp /etc/fstab /etc/fstab.bak.$$
-	for path in ${new_entries}; do
-		fstab_entries | awk -F '[ \t]+' -v path="$path" '
-			$2 == path {
-				print $0; exit(0)
-			}
-		' >> /etc/fstab
-	done
-}
+jail_mount_points="
+/proc
+/sys
+/dev
+/dev/fd
+/dev/shm
+/tmp
+/home
+"
 
 mk_mount_dirs()
 {
-	local dir
-	for dir in $(fstab_entries | awk -F'[ \t]+' '{ print $2 }'); do
-		echo "mkdir -p $dir"
+	local dir p
+	for p in ${jail_mount_points}; do
+		dir="${jail_path}/$p"
 		[ ! -d "${dir}" ] && mkdir -p "${dir}"
 	done
 }
 
 umount_jail()
 {
-	mount -p | awk -F'[ \t]+' -v jail=${jail_path} '
-		$2 ~ sprintf("^%s", jail) {
+	local mntpts _jail_path p _p
+
+	_jail_path=$(realpath "${jail_path}")
+	[ $? -ne 0 -o -z "${_jail_path}" ] && exit 1
+	mntpts=$(mount -p | awk -F'[ \t]+' -v jail=${_jail_path} '
+		$2 ~ sprintf("^%s/", jail) {
 			mp[n++] = $2
 		}
 		END {
 			while (--n >= 0) print mp[n]
 		}
-	' | xargs -I "{}" umount {} || exit 1
-}
-
-clean_fstab()
-{
-	local tmp
-	tmp=$(mktemp /etc/fstab.XXXXXX)
-	[ $? -ne 0 -o -z "${tmp}" ] && exit 1
-	cp -a /etc/fstab "${tmp}"
-	awk -F'[ \t]+' -v jail=${jail_path} '
-		$2 !~ sprintf("^%s", jail) {
-			print $0
-		}
-	' < /etc/fstab > "${tmp}"
-	mv "${tmp}" /etc/fstab
+	')
+	for p in ${mntpts}; do
+		_p=$(realpath "$p")
+		[ $? -ne 0 -o -z "${_p}" ] && exit 1
+		umount "${_p}" || exit 1
+		if (mount -p | grep -q "${_p}/"); then
+			echo "Couldn't unmount ${_p}" >&2
+			exit 1
+		fi
+	done
 }
 
 install_rc()
@@ -201,16 +172,39 @@ symlink_icons()
 	done
 }
 
+symlink_themes()
+{
+	local name i
+	[ ! -d ${jail_path}/usr/share/themes ] && \
+		mkdir -p ${jail_path}/usr/share/themes
+	for i in ${prefix}/share/themes/*; do
+		[ ! -d $i ] && continue
+		name=$(basename $i)
+		[ -e ${jail_path}/usr/share/icons/${name} ] && continue
+		ln -s $i ${jail_path}/usr/share/themes
+	done
+}
+
+set_timezone()
+{
+	printf "0.0 0 0.0\n0\nUTC\n" > ${jail_path}/etc/adjtime
+	cp /var/db/zoneinfo "${jail_path}/etc/timezone" \
+		${jail_path}/etc/localtime
+	rm -f ${jail_path}/etc/localtime
+	ln -s "/usr/share/zoneinfo/$(cat /var/db/zoneinfo)" \
+		${jail_path}/etc/localtime
+	chroot ${jail_path} /bin/bash -c \
+		"dpkg-reconfigure --frontend noninteractive tzdata"
+}
+
 install_jail_base()
 {
 	[ -f ${jail_path}/etc/os-release ] && return
-	setup_fstab
 	mk_mount_dirs
-	mount -al
 	install_rc
 	sysrc linux_enable=NO
 	sysrc ubuntu_enable=YES
-	service ubuntu start
+	service ubuntu start || exit 1
 	install_steam_utils
 	install_packages
 	debootstrap --arch=amd64 --no-check-gpg ${ubuntu_version} ${jail_path}
@@ -240,7 +234,6 @@ deinstall_jail_base()
 		exit 1
 	fi
 	umount_jail
-	clean_fstab
 	rm -rf "${path}"
 	rm -f "${prefix}/etc/rc.d/ubuntu"
 	sysrc -x ubuntu_enable

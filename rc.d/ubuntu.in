@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # PROVIDE: ubuntu
-# REQUIRE: archdep
+# REQUIRE: archdep mountlate
 # KEYWORD: nojail
 #
 # This is a modified version of /etc/rc.d/linux from FreeBSD 12.2-RELEASE
@@ -60,6 +60,10 @@ ubuntu_start()
 		unmounted "${_emul_path}/dev" && mount -t devfs devfs "${_emul_path}/dev"
 		unmounted "${_emul_path}/dev/fd" && mount -o linrdlnk -t fdescfs fdescfs "${_emul_path}/dev/fd"
 		unmounted "${_emul_path}/dev/shm" && mount -o mode=1777 -t tmpfs tmpfs "${_emul_path}/dev/shm"
+		unmounted "${_emul_path}/tmp" && mount -t nullfs /tmp "${_emul_path}/tmp"
+		unmounted "${_emul_path}/home" && mount -t nullfs /home "${_emul_path}/home"
+		unmounted /dev/fd && mount -t fdescfs null /dev/fd
+		unmounted /proc && mount -t procfs procfs /proc
 		true
 	fi
 }
