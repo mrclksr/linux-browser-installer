@@ -69,6 +69,7 @@ unmounts all the jail's filesystems, deletes the rc script, and removes its
 variable(s) from `/etc/rc.conf`.
 
 #### Update symlinks
+**Note**: Symlinks to files outside the jail will not work when `chroot`'ing.
 
 ##### For icons
 
