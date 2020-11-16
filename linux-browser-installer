@@ -146,7 +146,8 @@ install_brave()
 		'echo "deb [arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main" > /etc/apt/sources.list.d/brave-browser-release.list'
 	chroot ${jail_path} /bin/bash -c \
 		"apt update && apt install -y brave-browser"
-	rmdir "${jail_path}/${prefix}/share/fonts"
+	[ -d "${jail_path}/${prefix}/share/fonts" ] && \
+		rmdir "${jail_path}/${prefix}/share/fonts"
 	install -m 555 jail/bin/brave "${jail_bindir}"
 	install -m 555 bin/brave "${bindir}"
 	install -m 0644 brave.desktop "${appsdir}"
