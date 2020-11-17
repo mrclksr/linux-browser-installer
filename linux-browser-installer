@@ -19,7 +19,6 @@ jail_mount_points="
 /dev/fd
 /dev/shm
 /tmp
-/home
 "
 
 mk_mount_dirs()
