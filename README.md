@@ -2,12 +2,18 @@
 
 *linux-browser-installer* is a Bourne shell script to install Linux versions of
 the Chrome or Brave browser under FreeBSD into a Linux (Ubuntu Bionic) jail.
+They allow you to use web services like *Netflix*, *Prime Video*, or *Spotify*
+which require [Widevine](https://en.wikipedia.org/wiki/Widevine).
 The script is based on the excellent [Howto](https://forums.freebsd.org/threads/linuxulator-how-to-run-google-chrome-linux-binary-on-freebsd.77559/) by @[patovm04](https://github.com/patovm04).
 
 If not defined otherwise, Ubuntu Bionic (`$ubuntu_version`) is installed under
 `/compat/ubuntu` (`$jail_path`). A modified version of FreeBSD's linux rc-script
 (`rc.d/ubuntu`) is used to start the *linuxulator*, and to mount the jail's
 filesystems.
+
+### System requirements
+
+FreeBSD 12.2-RELEASE or 13-CURRENT
 
 ### Please Note
 
@@ -30,6 +36,7 @@ and/or
 ````
 # ./linux-browser-installer install brave
 ````
+
 If the jail is not existing yet, it will be created first.
 
 #### Deinstall Chrome or Brave browser
@@ -65,6 +72,7 @@ desktop file.
 ````
 # ./linux-browser-installer jail delete
 ````
+
 Before deleting the entire jail under `$jail_path`, this command
 unmounts all the jail's filesystems, deletes the rc script, and removes its
 variable(s) from `/etc/rc.conf`.
