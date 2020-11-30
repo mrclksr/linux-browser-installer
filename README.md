@@ -16,6 +16,8 @@ filesystems.
 FreeBSD 12.2-RELEASE or 13-CURRENT
 
 ### Please Note
+I use the term *jail* here for a directory to which you can `chroot`. It has
+nothing to do with FreeBSD jails.
 
 You can't run different Linux jails at the same time. If you want to run
 CentOS-based applications under `/compat/linux`, you have to set
@@ -38,6 +40,9 @@ and/or
 ````
 
 If the jail is not existing yet, it will be created first.
+
+Run `/usr/local/bin/linux-chrome` (`/usr/local/bin/linux-brave`) to start
+Chrome (Brave).
 
 #### Deinstall Chrome or Brave browser
 
