@@ -119,15 +119,15 @@ install_chrome()
 	[ -d "${jail_path}/${prefix}/share/fonts" ] && \
 		rmdir "${jail_path}/${prefix}/share/fonts"
 	install -m 555 jail/bin/chrome "${jail_bindir}"
-	install -m 555 bin/chrome "${bindir}"
-	install -m 0644 chrome.desktop "${appsdir}"
+	install -m 555 bin/linux-chrome "${bindir}"
+	install -m 0644 linux-chrome.desktop "${appsdir}"
 }
 
 deinstall_chrome()
 {
 	chroot ${jail_path} /bin/bash -c "apt remove -y google-chrome-stable"
-	rm -f "${appsdir}/chrome.desktop"
-	rm -f "${bindir}/chrome"
+	rm -f "${appsdir}/linux-chrome.desktop"
+	rm -f "${bindir}/linux-chrome"
 	rm -f "${jail_bindir}/chrome"
 }
 
@@ -148,15 +148,15 @@ install_brave()
 	[ -d "${jail_path}/${prefix}/share/fonts" ] && \
 		rmdir "${jail_path}/${prefix}/share/fonts"
 	install -m 555 jail/bin/brave "${jail_bindir}"
-	install -m 555 bin/brave "${bindir}"
-	install -m 0644 brave.desktop "${appsdir}"
+	install -m 555 bin/linux-brave "${bindir}"
+	install -m 0644 linux-brave.desktop "${appsdir}"
 }
 
 deinstall_brave()
 {
 	chroot ${jail_path} /bin/bash -c "apt remove -y brave-browser"
-	rm -f "${appsdir}/brave.desktop"
-	rm -f "${bindir}/brave"
+	rm -f "${appsdir}/linux-brave.desktop"
+	rm -f "${bindir}/linux-brave"
 	rm -f "${jail_bindir}/brave"
 }
 
