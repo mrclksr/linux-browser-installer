@@ -2,7 +2,7 @@
 Type=Application
 Version=1.0
 Encoding=UTF-8
-Name=Google Chrome
+Name=Google Chrome (Linux)
 Comment=Google web browser based on WebKit
 Icon=google-chrome
 Exec=/usr/local/bin/linux-chrome

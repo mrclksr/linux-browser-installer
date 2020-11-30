@@ -2,7 +2,7 @@
 Type=Application
 Version=1.0
 Encoding=UTF-8
-Name=Brave Web Browser
+Name=Brave Web Browser (Linux)
 Comment=Access the Internet
 Icon=brave-browser
 Exec=/usr/local/bin/linux-brave
