@@ -240,7 +240,8 @@ deinstall_jail_base()
 
 upgrade_jail()
 {
-	chroot ${jail_path} /bin/bash -c "apt update && apt upgrade"
+	local flags="-q -y --force-yes"
+	echo chroot ${jail_path} /bin/bash -c "apt-get update && apt upgrade ${flags}"
 }
 
 cleanup()
