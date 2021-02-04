@@ -21,6 +21,14 @@ jail_mount_points="
 /tmp
 "
 
+bail()
+{
+	if [ $# -gt 0 ]; then
+		echo "${0##*/}: Error: $*" >&2
+	fi
+	exit 1
+}
+
 mk_mount_dirs()
 {
 	local dir p
@@ -49,8 +57,7 @@ umount_jail()
 		[ $? -ne 0 -o -z "${_p}" ] && exit 1
 		umount "${_p}" || exit 1
 		if (mount -p | grep -q "${_p}/"); then
-			echo "Couldn't unmount ${_p}" >&2
-			exit 1
+			bail "Couldn't unmount ${_p}"
 		fi
 	done
 }
@@ -73,7 +80,7 @@ install_packages()
 {
 	for p in ${pkg_list}; do
 		pkg info --exists $p && continue
-		pkg install -y $p
+		pkg install -y $p || bail "'pkg install -y $p' failed"
 	done
 }
 
@@ -90,7 +97,8 @@ install_apt_packages()
 	chroot ${jail_path} /bin/bash -c 'apt update'
 	chroot ${jail_path} /bin/bash -c 'apt remove -y rsyslog'
 	for p in ${apt_packages}; do
-		chroot ${jail_path} /bin/bash -c "apt install -y $p"
+		chroot ${jail_path} /bin/bash -c "apt install -y $p" || \
+			bail "'apt install -y $p' failed"
 	done
 }
 
@@ -103,10 +111,6 @@ build_scripts()
 
 install_chrome()
 {
-	local cmd
-	cmd="apt-key add linux_signing_key.pub && apt update && "
-	cmd="${cmd} apt install -y google-chrome-stable"
-
 	if [ -x ${jail_path}/opt/google/chrome/chrome ]; then
 		echo "Chrome already installed" >&2
 		exit 1
@@ -114,8 +118,13 @@ install_chrome()
 	echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ " \
 	     "stable main" > \
 		"${jail_path}/etc/apt/sources.list.d/google-chrome.list"
-	fetch -o ${jail_path} https://dl.google.com/linux/linux_signing_key.pub
-	chroot ${jail_path} /bin/bash -c "${cmd}"
+	fetch -o ${jail_path} \
+		https://dl.google.com/linux/linux_signing_key.pub || exit 1
+	chroot ${jail_path} /bin/bash -c "apt-key add linux_signing_key.pub" || \
+		bail "'apt-key add linux_signing_key.pub' failed"
+	chroot ${jail_path} /bin/bash -c "apt update"
+	chroot ${jail_path} /bin/bash -c "apt install -y google-chrome-stable" || \
+		bail "'apt install -y google-chrome-stable' failed"
 	[ -d "${jail_path}/${prefix}/share/fonts" ] && \
 		rmdir "${jail_path}/${prefix}/share/fonts"
 	install -m 555 jail/bin/chrome "${jail_bindir}"
@@ -125,7 +134,8 @@ install_chrome()
 
 deinstall_chrome()
 {
-	chroot ${jail_path} /bin/bash -c "apt remove -y google-chrome-stable"
+	chroot ${jail_path} /bin/bash -c "apt remove -y google-chrome-stable" || \
+		bail "'apt remove -y google-chrome-stable' failed"
 	rm -f "${appsdir}/linux-chrome.desktop"
 	rm -f "${bindir}/linux-chrome"
 	rm -f "${jail_bindir}/chrome"
@@ -138,13 +148,16 @@ install_brave()
 		exit 1
 	fi
 	chroot ${jail_path} /bin/bash -c \
-		"apt install -y apt-transport-https curl"
+		"apt install -y apt-transport-https curl" || \
+		bail "'apt install -y apt-transport-https curl' failed"
 	chroot ${jail_path} /bin/bash -c \
-		'curl -s https://brave-browser-apt-release.s3.brave.com/brave-core.asc | apt-key --keyring /etc/apt/trusted.gpg.d/brave-browser-release.gpg add -'
+		'curl -s https://brave-browser-apt-release.s3.brave.com/brave-core.asc | apt-key --keyring /etc/apt/trusted.gpg.d/brave-browser-release.gpg add -' || \
+		bail "'curl -s https://brave-browser-apt-release.s3.brave.com/brave-core.asc | apt-key --keyring /etc/apt/trusted.gpg.d/brave-browser-release.gpg add -' failed"
 	chroot ${jail_path} /bin/bash -c \
 		'echo "deb [arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main" > /etc/apt/sources.list.d/brave-browser-release.list'
-	chroot ${jail_path} /bin/bash -c \
-		"apt update && apt install -y brave-browser"
+	chroot ${jail_path} /bin/bash -c "apt update"
+	chroot ${jail_path} /bin/bash -c "apt install -y brave-browser" || \
+		bail "'apt install -y brave-browser' failed"
 	[ -d "${jail_path}/${prefix}/share/fonts" ] && \
 		rmdir "${jail_path}/${prefix}/share/fonts"
 	install -m 555 jail/bin/brave "${jail_bindir}"
@@ -205,10 +218,11 @@ install_jail_base()
 	install_rc
 	sysrc linux_enable=NO
 	sysrc ubuntu_enable=YES
-	service ubuntu start || exit 1
+	service ubuntu start || bail "Failed to start ubuntu service"
 	install_steam_utils
 	install_packages
-	debootstrap --arch=amd64 --no-check-gpg ${ubuntu_version} ${jail_path}
+	debootstrap --arch=amd64 --no-check-gpg ${ubuntu_version} ${jail_path} || \
+		bail "debootstrap failed"
 	echo "APT::Cache-Start 251658240;" > \
 		${jail_path}/etc/apt/apt.conf.d/00aptitude
 	echo "deb http://archive.ubuntu.com/ubuntu/ ${ubuntu_version} " \
