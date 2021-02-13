@@ -1,7 +1,7 @@
 ### About
 
 *linux-browser-installer* is a Bourne shell script to install Linux versions of
-the Chrome or Brave browser under FreeBSD into a Linux (Ubuntu Bionic) jail.
+the Chrome, Brave or Vivaldi browsers under FreeBSD into a Linux (Ubuntu Bionic) jail.
 They allow you to use web services like *Netflix*, *Prime Video*, or *Spotify*
 which require [Widevine](https://en.wikipedia.org/wiki/Widevine).
 The script is based on the excellent [Howto](https://forums.freebsd.org/threads/linuxulator-how-to-run-google-chrome-linux-binary-on-freebsd.77559/) by @[patovm04](https://github.com/patovm04).
@@ -27,7 +27,7 @@ default, set either (not both) `linux_enable="YES"` or `ubuntu_enable="YES"`
 in `/etc/rc.conf`.
 
 ### Usage
-#### Install Chrome or Brave browser
+#### Install Chrome, Brave or Vivaldi browser
 
 ````
 # ./linux-browser-installer install chrome
@@ -39,12 +39,18 @@ and/or
 # ./linux-browser-installer install brave
 ````
 
+and/or
+
+````
+# ./linux-browser-installer install vivaldi
+````
+
 If the jail is not existing yet, it will be created first.
 
-Run `/usr/local/bin/linux-chrome` (`/usr/local/bin/linux-brave`) to start
-Chrome (Brave).
+Run `/usr/local/bin/linux-chrome`, `/usr/local/bin/linux-brave`
+or `/usr/local/bin/linux-vivaldi` to start your installed browser.
 
-#### Deinstall Chrome or Brave browser
+#### Deinstall Chrome, Brave or Vivaldi browser
 
 ````
 # ./linux-browser-installer deinstall chrome
@@ -54,6 +60,12 @@ and/or
 
 ````
 # ./linux-browser-installer deinstall brave
+````
+
+and/or
+
+````
+# ./linux-browser-installer deinstall vivaldi
 ````
 
 This command deinstalls the browser, and removes its wrapper
