@@ -173,6 +173,38 @@ deinstall_brave()
 	rm -f "${jail_bindir}/brave"
 }
 
+install_vivaldi()
+{
+	if [ -x ${jail_path}/opt/vivaldi/vivaldi ]; then
+		echo "Vivaldi already installed" >&2
+		exit 1
+	fi
+	echo "deb [arch=amd64] https://repo.vivaldi.com/archive/deb/ " \
+	     "stable main" > \
+		"${jail_path}/etc/apt/sources.list.d/vivaldi.list"
+	fetch -o ${jail_path} \
+		https://repo.vivaldi.com/archive/linux_signing_key.pub || exit 1
+	chroot ${jail_path} /bin/bash -c "apt-key add linux_signing_key.pub" || \
+		bail "'apt-key add linux_signing_key.pub' failed"
+	chroot ${jail_path} /bin/bash -c "apt update"
+	chroot ${jail_path} /bin/bash -c "apt install -y vivaldi-stable" || \
+		bail "'apt install -y vivaldi-stable' failed"
+	[ -d "${jail_path}/${prefix}/share/fonts" ] && \
+		rmdir "${jail_path}/${prefix}/share/fonts"
+	install -m 555 jail/bin/vivaldi "${jail_bindir}"
+	install -m 555 bin/linux-vivaldi "${bindir}"
+	install -m 0644 linux-vivaldi.desktop "${appsdir}"
+}
+
+deinstall_vivaldi()
+{
+	chroot ${jail_path} /bin/bash -c "apt remove -y vivaldo-stable" || \
+		bail "'apt remove -y vivaldi-stable' failed"
+	rm -f "${appsdir}/linux-vivaldi.desktop"
+	rm -f "${bindir}/linux-vivaldi"
+	rm -f "${jail_bindir}/vivaldi"
+}
+
 symlink_icons()
 {
 	local name i
@@ -285,7 +317,7 @@ while [ $# -gt 0 ]; do
 	case "$1" in
 	install)
 		case $2 in
-		brave|chrome)
+		brave|chrome|vivaldi)
 			browser=$2
 			build_scripts
 			install_jail_base
@@ -299,7 +331,7 @@ while [ $# -gt 0 ]; do
 		;;
 	deinstall)
 		case $2 in
-		brave|chrome)
+		brave|chrome|vivaldi)
 			browser=$2
 			eval deinstall_${browser}
 			exit 0
