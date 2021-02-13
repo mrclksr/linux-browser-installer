@@ -298,8 +298,8 @@ cleanup()
 
 usage()
 {
-	echo "Usage: $0 install <brave|chrome>"
-	echo "       $0 deinstall <brave|chrome>"
+	echo "Usage: $0 install <brave|chrome|vivaldi>"
+	echo "       $0 deinstall <brave|chrome|vivaldi>"
 	echo "       $0 jail <create|upgrade|delete>"
 	echo "       $0 symlink <icons|themes>"
 	echo "       $0 clean"
