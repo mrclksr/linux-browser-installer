@@ -198,7 +198,7 @@ install_vivaldi()
 
 deinstall_vivaldi()
 {
-	chroot ${jail_path} /bin/bash -c "apt remove -y vivaldo-stable" || \
+	chroot ${jail_path} /bin/bash -c "apt remove -y vivaldi-stable" || \
 		bail "'apt remove -y vivaldi-stable' failed"
 	rm -f "${appsdir}/linux-vivaldi.desktop"
 	rm -f "${bindir}/linux-vivaldi"
