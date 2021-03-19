@@ -2,8 +2,8 @@
 
 prefix=/usr/local
 jail_path=/compat/ubuntu
-ubuntu_version=bionic
-ld_version=2.27
+ubuntu_version=focal
+ld_version=2.31
 
 bindir="${prefix}/bin"
 appsdir="${prefix}/share/applications"
@@ -234,6 +234,9 @@ symlink_themes()
 set_timezone()
 {
 	printf "0.0 0 0.0\n0\nUTC\n" > ${jail_path}/etc/adjtime
+	if [ ! -d "${jail_path}/etc/localtime" ]; then
+		mkdir -p "${jail_path}/etc/localtime"
+	fi
 	cp /var/db/zoneinfo "${jail_path}/etc/timezone" \
 		${jail_path}/etc/localtime
 	rm -f ${jail_path}/etc/localtime
