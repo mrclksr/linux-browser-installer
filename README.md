@@ -1,14 +1,14 @@
 ### About
 
 *linux-browser-installer* is a Bourne shell script to install Linux versions of
-the Chrome, Brave or Vivaldi browsers under FreeBSD into a Linux (Ubuntu Focal) jail.
+the Chrome, Brave or Vivaldi browsers under FreeBSD into a Linux (Ubuntu Focal) chroot.
 They allow you to use web services like *Netflix*, *Prime Video*, or *Spotify*
 which require [Widevine](https://en.wikipedia.org/wiki/Widevine).
 The script is based on the excellent [Howto](https://forums.freebsd.org/threads/linuxulator-how-to-run-google-chrome-linux-binary-on-freebsd.77559/) by @[patovm04](https://github.com/patovm04).
 
 If not defined otherwise, Ubuntu Focal (`$ubuntu_version`) is installed under
-`/compat/ubuntu` (`$jail_path`). A modified version of FreeBSD's linux rc-script
-(`rc.d/ubuntu`) is used to start the *linuxulator*, and to mount the jail's
+`/compat/ubuntu` (`$chroot_path`). A modified version of FreeBSD's linux rc-script
+(`rc.d/ubuntu`) is used to start the *linuxulator*, and to mount the chroot's
 filesystems.
 
 ### System requirements
@@ -16,13 +16,11 @@ filesystems.
 FreeBSD 12.2-RELEASE or 13-CURRENT
 
 ### Please Note
-I use the term *jail* here for a directory to which you can `chroot`. It has
-nothing to do with FreeBSD jails.
 
-You can't run different Linux jails at the same time. If you want to run
+You can't run different Linux chroots at the same time. If you want to run
 CentOS-based applications under `/compat/linux`, you have to set
 `sysctl compat.linux.emul_path=/compat/linux`, and start the linux rc-script
-(`service linux onestart`). Depending on which jail you intend to use by
+(`service linux onestart`). Depending on which chroot you intend to use by
 default, set either (not both) `linux_enable="YES"` or `ubuntu_enable="YES"`
 in `/etc/rc.conf`.
 
@@ -45,7 +43,7 @@ and/or
 # ./linux-browser-installer install vivaldi
 ````
 
-If the jail is not existing yet, it will be created first.
+If the chroot is not existing yet, it will be created first.
 
 Run `/usr/local/bin/linux-chrome`, `/usr/local/bin/linux-brave`
 or `/usr/local/bin/linux-vivaldi` to start your installed browser.
@@ -69,35 +67,35 @@ and/or
 ````
 
 This command deinstalls the browser, and removes its wrapper
-scripts from `/usr/local/bin` and `$jail_path/bin` along with its
+scripts from `/usr/local/bin` and `$chroot_path/bin` along with its
 desktop file.
 
-#### Create jail
+#### Create chroot
 
 ````
-# ./linux-browser-installer jail create
+# ./linux-browser-installer chroot create
 ````
 
-#### Upgrade software installed in the jail
+#### Upgrade software installed in the chroot
 
 ````
-# ./linux-browser-installer jail upgrade
+# ./linux-browser-installer chroot upgrade
 ````
 
-#### Delete jail
+#### Delete chroot
 
 ````
-# ./linux-browser-installer jail delete
+# ./linux-browser-installer chroot delete
 ````
 
-Before deleting the entire jail under `$jail_path`, this command
-unmounts all the jail's filesystems, deletes the rc script, and removes its
+Before deleting the entire chroot under `$chroot_path`, this command
+unmounts all the chroot's filesystems, deletes the rc script, and removes its
 variable(s) from `/etc/rc.conf`.
 
 #### Update symlinks
 - - -
 
-**Note**: Symlinks to files outside the jail will not work when `chroot`'ing.
+**Note**: Symlinks to files outside the chroot will not work when `chroot`'ing.
 
 - - -
 
@@ -108,8 +106,8 @@ variable(s) from `/etc/rc.conf`.
 ````
 
 This command updates the symlinks from `$prefix/share/icons` to
-`$jail_path/usr/share/icons`. Use this after installing new icons
-to make them available to applications in the jail.
+`$chroot_path/usr/share/icons`. Use this after installing new icons
+to make them available to applications in the chroot.
 
 ##### For themes
 ````
@@ -117,8 +115,8 @@ to make them available to applications in the jail.
 ````
 
 This command updates the symlinks from `$prefix/share/themes` to
-`$jail_path/usr/share/themes`. Use this after installing new themes
-to make them available to applications in the jail.
+`$chroot_path/usr/share/themes`. Use this after installing new themes
+to make them available to applications in the chroot.
 
 #### Delete working files from current directory
 ````

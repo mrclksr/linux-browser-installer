@@ -9,7 +9,7 @@
 . /etc/rc.subr
 
 name="ubuntu"
-desc="Enable Ubuntu jail, and Linux ABI"
+desc="Enable Ubuntu chroot, and Linux ABI"
 rcvar="ubuntu_enable"
 start_cmd="${name}_start"
 stop_cmd=":"
@@ -30,11 +30,11 @@ ubuntu_start()
 		load_kld -e 'linux64elf' linux64
 		;;
 	esac
-	if [ -x @JAIL_PATH@/sbin/ldconfigDisabled ]; then
+	if [ -x @CHROOT_PATH@/sbin/ldconfigDisabled ]; then
 		_tmpdir=`mktemp -d -t linux-ldconfig`
-		@JAIL_PATH@/sbin/ldconfig -C ${_tmpdir}/ld.so.cache
-		if ! cmp -s ${_tmpdir}/ld.so.cache @JAIL_PATH@/etc/ld.so.cache; then
-			cat ${_tmpdir}/ld.so.cache > @JAIL_PATH@/etc/ld.so.cache
+		@CHROOT_PATH@/sbin/ldconfig -C ${_tmpdir}/ld.so.cache
+		if ! cmp -s ${_tmpdir}/ld.so.cache @CHROOT_PATH@/etc/ld.so.cache; then
+			cat ${_tmpdir}/ld.so.cache > @CHROOT_PATH@/etc/ld.so.cache
 		fi
 		rm -rf ${_tmpdir}
 	fi
@@ -50,9 +50,9 @@ ubuntu_start()
 	if [ `sysctl -ni kern.elf32.fallback_brand` -eq "-1" ]; then
 		sysctl kern.elf32.fallback_brand=3 > /dev/null
 	fi
-	sysctl compat.linux.emul_path=@JAIL_PATH@
+	sysctl compat.linux.emul_path=@CHROOT_PATH@
 
-	_emul_path="@JAIL_PATH@"
+	_emul_path="@CHROOT_PATH@"
 	unmounted "${_emul_path}/proc" && (mount -t linprocfs linprocfs "${_emul_path}/proc" || exit 1)
 	unmounted "${_emul_path}/sys" && (mount -t linsysfs linsysfs "${_emul_path}/sys" || exit 1)
 	unmounted "${_emul_path}/dev" && (mount -t devfs devfs "${_emul_path}/dev" || exit 1)

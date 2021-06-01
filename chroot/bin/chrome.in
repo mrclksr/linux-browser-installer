@@ -1,4 +1,4 @@
-#!@JAIL_PATH@/bin/bash
+#!@CHROOT_PATH@/bin/bash
 #
 # chrome wrapper script from patovm04:
 # https://forums.freebsd.org/threads/linuxulator-how-to-run-google-chrome-linux-binary-on-freebsd.77559/

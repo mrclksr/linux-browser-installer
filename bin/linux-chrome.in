@@ -1,6 +1,6 @@
 #!/bin/sh
 
-jail_path=@JAIL_PATH@
+chroot_path=@CHROOT_PATH@
 
 get_pa_sock_path()
 {
@@ -21,5 +21,5 @@ if [ ! -S "$PA_SOCK_PATH" ]; then
 	get_pa_sock_path
 fi
 [ -S "$PA_SOCK_PATH" ] && export PULSE_SERVER=unix:$PA_SOCK_PATH
-${jail_path}/bin/chrome
+${chroot_path}/bin/chrome
 

@@ -1,14 +1,14 @@
-#!@JAIL_PATH@/bin/bash
+#!@CHROOT_PATH@/bin/bash
 #
-# vivaldi wrapper script, adapted from patovm04:
+# brave wrapper script from patovm04:
 # https://forums.freebsd.org/threads/linuxulator-how-to-run-google-chrome-linux-binary-on-freebsd.77559/
 #
 
-export VIVALDI_PATH="/opt/vivaldi/vivaldi"
+export BRAVE_PATH="/opt/brave.com/brave/brave"
 export CHROME_WRAPPER="`readlink -f "$0"`"
 export LD_LIBRARY_PATH=/usr/local/steam-utils/lib64/fakeudev
 export LD_PRELOAD=/usr/local/steam-utils/lib64/webfix/webfix.so
 export LIBGL_DRI3_DISABLE=1
 
-exec -a "$0" "$VIVALDI_PATH" --no-sandbox --no-zygote --in-process-gpu --test-type --v=0 "$@"
+exec -a "$0" "$BRAVE_PATH" --no-sandbox --no-zygote --in-process-gpu --test-type --v=0 "$@"
 

@@ -1,18 +1,18 @@
 #!/bin/sh
 
 prefix=/usr/local
-jail_path=/compat/ubuntu
+chroot_path=/compat/ubuntu
 ubuntu_version=focal
 ld_version=2.31
 
 bindir="${prefix}/bin"
 appsdir="${prefix}/share/applications"
-jail_bindir="${jail_path}/bin"
+chroot_bindir="${chroot_path}/bin"
 
 apt_packages="gnupg pulseaudio"
 pkg_list="debootstrap pulseaudio"
 
-jail_mount_points="
+chroot_mount_points="
 /proc
 /sys
 /dev
@@ -32,20 +32,20 @@ bail()
 mk_mount_dirs()
 {
 	local dir p
-	for p in ${jail_mount_points}; do
-		dir="${jail_path}/$p"
+	for p in ${chroot_mount_points}; do
+		dir="${chroot_path}/$p"
 		[ ! -d "${dir}" ] && mkdir -p "${dir}"
 	done
 }
 
-umount_jail()
+umount_chroot()
 {
-	local mntpts _jail_path p _p
+	local mntpts _chroot_path p _p
 
-	_jail_path=$(realpath "${jail_path}")
-	[ $? -ne 0 -o -z "${_jail_path}" ] && exit 1
-	mntpts=$(mount -p | awk -F'[ \t]+' -v jail=${_jail_path} '
-		$2 ~ sprintf("^%s/", jail) {
+	_chroot_path=$(realpath "${chroot_path}")
+	[ $? -ne 0 -o -z "${_chroot_path}" ] && exit 1
+	mntpts=$(mount -p | awk -F'[ \t]+' -v chroot=${_chroot_path} '
+		$2 ~ sprintf("^%s/", chroot) {
 			mp[n++] = $2
 		}
 		END {
@@ -86,7 +86,7 @@ install_packages()
 
 fix_ld_path()
 {
-	(cd ${jail_path}/lib64 && \
+	(cd ${chroot_path}/lib64 && \
 		(unlink ./ld-linux-x86-64.so.2; \
 			ln -s ../lib/x86_64-linux-gnu/ld-${ld_version}.so \
 			ld-linux-x86-64.so.2))
@@ -94,161 +94,161 @@ fix_ld_path()
 
 install_apt_packages()
 {
-	chroot ${jail_path} /bin/bash -c 'apt update'
-	chroot ${jail_path} /bin/bash -c 'apt remove -y rsyslog'
+	chroot ${chroot_path} /bin/bash -c 'apt update'
+	chroot ${chroot_path} /bin/bash -c 'apt remove -y rsyslog'
 	for p in ${apt_packages}; do
-		chroot ${jail_path} /bin/bash -c "apt install -y $p" || \
+		chroot ${chroot_path} /bin/bash -c "apt install -y $p" || \
 			bail "'apt install -y $p' failed"
 	done
 }
 
 build_scripts()
 {
-	for s in $(find bin jail/bin rc.d -name "*.in"); do
-		sed -E "s#@JAIL_PATH@#${jail_path}#g" < $s > ${s%.in}
+	for s in $(find bin chroot/bin rc.d -name "*.in"); do
+		sed -E "s#@CHROOT_PATH@#${chroot_path}#g" < $s > ${s%.in}
 	done
 }
 
 install_chrome()
 {
-	if [ -x ${jail_path}/opt/google/chrome/chrome ]; then
+	if [ -x ${chroot_path}/opt/google/chrome/chrome ]; then
 		echo "Chrome already installed" >&2
 		exit 1
 	fi
 	echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ " \
 	     "stable main" > \
-		"${jail_path}/etc/apt/sources.list.d/google-chrome.list"
-	fetch -o ${jail_path} \
+		"${chroot_path}/etc/apt/sources.list.d/google-chrome.list"
+	fetch -o ${chroot_path} \
 		https://dl.google.com/linux/linux_signing_key.pub || exit 1
-	chroot ${jail_path} /bin/bash -c "apt-key add linux_signing_key.pub" || \
+	chroot ${chroot_path} /bin/bash -c "apt-key add linux_signing_key.pub" || \
 		bail "'apt-key add linux_signing_key.pub' failed"
-	chroot ${jail_path} /bin/bash -c "apt update"
-	chroot ${jail_path} /bin/bash -c "apt install -y google-chrome-stable" || \
+	chroot ${chroot_path} /bin/bash -c "apt update"
+	chroot ${chroot_path} /bin/bash -c "apt install -y google-chrome-stable" || \
 		bail "'apt install -y google-chrome-stable' failed"
-	[ -d "${jail_path}/${prefix}/share/fonts" ] && \
-		rmdir "${jail_path}/${prefix}/share/fonts"
-	install -m 555 jail/bin/chrome "${jail_bindir}"
+	[ -d "${chroot_path}/${prefix}/share/fonts" ] && \
+		rmdir "${chroot_path}/${prefix}/share/fonts"
+	install -m 555 chroot/bin/chrome "${chroot_bindir}"
 	install -m 555 bin/linux-chrome "${bindir}"
 	install -m 0644 linux-chrome.desktop "${appsdir}"
 }
 
 deinstall_chrome()
 {
-	chroot ${jail_path} /bin/bash -c "apt remove -y google-chrome-stable" || \
+	chroot ${chroot_path} /bin/bash -c "apt remove -y google-chrome-stable" || \
 		bail "'apt remove -y google-chrome-stable' failed"
 	rm -f "${appsdir}/linux-chrome.desktop"
 	rm -f "${bindir}/linux-chrome"
-	rm -f "${jail_bindir}/chrome"
+	rm -f "${chroot_bindir}/chrome"
 }
 
 install_brave()
 {
-	if [ -x ${jail_path}/opt/brave.com/brave/brave ]; then
+	if [ -x ${chroot_path}/opt/brave.com/brave/brave ]; then
 		echo "Brave already installed" >&2
 		exit 1
 	fi
-	chroot ${jail_path} /bin/bash -c \
+	chroot ${chroot_path} /bin/bash -c \
 		"apt install -y apt-transport-https curl" || \
 		bail "'apt install -y apt-transport-https curl' failed"
-	chroot ${jail_path} /bin/bash -c \
+	chroot ${chroot_path} /bin/bash -c \
 		'curl -s https://brave-browser-apt-release.s3.brave.com/brave-core.asc | apt-key --keyring /etc/apt/trusted.gpg.d/brave-browser-release.gpg add -' || \
 		bail "'curl -s https://brave-browser-apt-release.s3.brave.com/brave-core.asc | apt-key --keyring /etc/apt/trusted.gpg.d/brave-browser-release.gpg add -' failed"
-	chroot ${jail_path} /bin/bash -c \
+	chroot ${chroot_path} /bin/bash -c \
 		'echo "deb [arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main" > /etc/apt/sources.list.d/brave-browser-release.list'
-	chroot ${jail_path} /bin/bash -c "apt update"
-	chroot ${jail_path} /bin/bash -c "apt install -y brave-browser" || \
+	chroot ${chroot_path} /bin/bash -c "apt update"
+	chroot ${chroot_path} /bin/bash -c "apt install -y brave-browser" || \
 		bail "'apt install -y brave-browser' failed"
-	[ -d "${jail_path}/${prefix}/share/fonts" ] && \
-		rmdir "${jail_path}/${prefix}/share/fonts"
-	install -m 555 jail/bin/brave "${jail_bindir}"
+	[ -d "${chroot_path}/${prefix}/share/fonts" ] && \
+		rmdir "${chroot_path}/${prefix}/share/fonts"
+	install -m 555 chroot/bin/brave "${chroot_bindir}"
 	install -m 555 bin/linux-brave "${bindir}"
 	install -m 0644 linux-brave.desktop "${appsdir}"
 }
 
 deinstall_brave()
 {
-	chroot ${jail_path} /bin/bash -c "apt remove -y brave-browser"
+	chroot ${chroot_path} /bin/bash -c "apt remove -y brave-browser"
 	rm -f "${appsdir}/linux-brave.desktop"
 	rm -f "${bindir}/linux-brave"
-	rm -f "${jail_bindir}/brave"
+	rm -f "${chroot_bindir}/brave"
 }
 
 install_vivaldi()
 {
-	if [ -x ${jail_path}/opt/vivaldi/vivaldi ]; then
+	if [ -x ${chroot_path}/opt/vivaldi/vivaldi ]; then
 		echo "Vivaldi already installed" >&2
 		exit 1
 	fi
 	echo "deb [arch=amd64] https://repo.vivaldi.com/archive/deb/ " \
 	     "stable main" > \
-		"${jail_path}/etc/apt/sources.list.d/vivaldi.list"
-	fetch -o ${jail_path} \
+		"${chroot_path}/etc/apt/sources.list.d/vivaldi.list"
+	fetch -o ${chroot_path} \
 		https://repo.vivaldi.com/archive/linux_signing_key.pub || exit 1
-	chroot ${jail_path} /bin/bash -c "apt-key add linux_signing_key.pub" || \
+	chroot ${chroot_path} /bin/bash -c "apt-key add linux_signing_key.pub" || \
 		bail "'apt-key add linux_signing_key.pub' failed"
-	chroot ${jail_path} /bin/bash -c "apt update"
-	chroot ${jail_path} /bin/bash -c "apt install -y vivaldi-stable" || \
+	chroot ${chroot_path} /bin/bash -c "apt update"
+	chroot ${chroot_path} /bin/bash -c "apt install -y vivaldi-stable" || \
 		bail "'apt install -y vivaldi-stable' failed"
-	[ -d "${jail_path}/${prefix}/share/fonts" ] && \
-		rmdir "${jail_path}/${prefix}/share/fonts"
-	install -m 555 jail/bin/vivaldi "${jail_bindir}"
+	[ -d "${chroot_path}/${prefix}/share/fonts" ] && \
+		rmdir "${chroot_path}/${prefix}/share/fonts"
+	install -m 555 chroot/bin/vivaldi "${chroot_bindir}"
 	install -m 555 bin/linux-vivaldi "${bindir}"
 	install -m 0644 linux-vivaldi.desktop "${appsdir}"
 }
 
 deinstall_vivaldi()
 {
-	chroot ${jail_path} /bin/bash -c "apt remove -y vivaldi-stable" || \
+	chroot ${chroot_path} /bin/bash -c "apt remove -y vivaldi-stable" || \
 		bail "'apt remove -y vivaldi-stable' failed"
 	rm -f "${appsdir}/linux-vivaldi.desktop"
 	rm -f "${bindir}/linux-vivaldi"
-	rm -f "${jail_bindir}/vivaldi"
+	rm -f "${chroot_bindir}/vivaldi"
 }
 
 symlink_icons()
 {
 	local name i
-	[ ! -d ${jail_path}/usr/share/icons ] && \
-		mkdir -p ${jail_path}/usr/share/icons
+	[ ! -d ${chroot_path}/usr/share/icons ] && \
+		mkdir -p ${chroot_path}/usr/share/icons
 	for i in ${prefix}/share/icons/*; do
 		[ ! -d $i ] && continue
 		name=$(basename $i)
-		[ -e ${jail_path}/usr/share/icons/${name} ] && continue
-		ln -s $i ${jail_path}/usr/share/icons
+		[ -e ${chroot_path}/usr/share/icons/${name} ] && continue
+		ln -s $i ${chroot_path}/usr/share/icons
 	done
 }
 
 symlink_themes()
 {
 	local name i
-	[ ! -d ${jail_path}/usr/share/themes ] && \
-		mkdir -p ${jail_path}/usr/share/themes
+	[ ! -d ${chroot_path}/usr/share/themes ] && \
+		mkdir -p ${chroot_path}/usr/share/themes
 	for i in ${prefix}/share/themes/*; do
 		[ ! -d $i ] && continue
 		name=$(basename $i)
-		[ -e ${jail_path}/usr/share/themes/${name} ] && continue
-		ln -s $i ${jail_path}/usr/share/themes
+		[ -e ${chroot_path}/usr/share/themes/${name} ] && continue
+		ln -s $i ${chroot_path}/usr/share/themes
 	done
 }
 
 set_timezone()
 {
-	printf "0.0 0 0.0\n0\nUTC\n" > ${jail_path}/etc/adjtime
-	if [ ! -d "${jail_path}/etc/localtime" ]; then
-		mkdir -p "${jail_path}/etc/localtime"
+	printf "0.0 0 0.0\n0\nUTC\n" > ${chroot_path}/etc/adjtime
+	if [ ! -d "${chroot_path}/etc/localtime" ]; then
+		mkdir -p "${chroot_path}/etc/localtime"
 	fi
-	cp /var/db/zoneinfo "${jail_path}/etc/timezone" \
-		${jail_path}/etc/localtime
-	rm -f ${jail_path}/etc/localtime
+	cp /var/db/zoneinfo "${chroot_path}/etc/timezone" \
+		${chroot_path}/etc/localtime
+	rm -f ${chroot_path}/etc/localtime
 	ln -s "/usr/share/zoneinfo/$(cat /var/db/zoneinfo)" \
-		${jail_path}/etc/localtime
-	chroot ${jail_path} /bin/bash -c \
+		${chroot_path}/etc/localtime
+	chroot ${chroot_path} /bin/bash -c \
 		"dpkg-reconfigure --frontend noninteractive tzdata"
 }
 
-install_jail_base()
+install_chroot_base()
 {
-	[ -f ${jail_path}/etc/os-release ] && return
+	[ -f ${chroot_path}/etc/os-release ] && return
 	mk_mount_dirs
 	install_rc
 	sysrc linux_enable=NO
@@ -256,13 +256,13 @@ install_jail_base()
 	service ubuntu start || bail "Failed to start ubuntu service"
 	install_steam_utils
 	install_packages
-	debootstrap --arch=amd64 --no-check-gpg ${ubuntu_version} ${jail_path} || \
+	debootstrap --arch=amd64 --no-check-gpg ${ubuntu_version} ${chroot_path} || \
 		bail "debootstrap failed"
 	echo "APT::Cache-Start 251658240;" > \
-		${jail_path}/etc/apt/apt.conf.d/00aptitude
+		${chroot_path}/etc/apt/apt.conf.d/00aptitude
 	echo "deb http://archive.ubuntu.com/ubuntu/ ${ubuntu_version} " \
 	     "main restricted universe multiverse" > \
-		${jail_path}/etc/apt/sources.list
+		${chroot_path}/etc/apt/sources.list
 	fix_ld_path
 	set_timezone
 	service ubuntu start
@@ -271,39 +271,39 @@ install_jail_base()
 	symlink_themes
 }
 
-deinstall_jail_base()
+deinstall_chroot_base()
 {
 	local path
-	path=$(realpath ${jail_path})
+	path=$(realpath ${chroot_path})
 	[ $? -ne 0 ] && exit 1
 
 	if [ "${path}" = "/" ]; then
-		echo "jail_path must not be '/'" >&2
+		echo "chroot_path must not be '/'" >&2
 		exit 1
 	fi
-	umount_jail
+	umount_chroot
 	rm -rf "${path}"
 	rm -f "${prefix}/etc/rc.d/ubuntu"
 	sysrc -x ubuntu_enable
 }
 
-upgrade_jail()
+upgrade_chroot()
 {
 	local flags="-q -y --allow-downgrades"
 	flags="${flags} --allow-remove-essential --allow-change-held-packages"
-	chroot ${jail_path} /bin/bash -c "apt-get update && apt upgrade ${flags}"
+	chroot ${chroot_path} /bin/bash -c "apt-get update && apt upgrade ${flags}"
 }
 
 cleanup()
 {
-	rm -f bin/chrome bin/brave jail/bin/chrome jail/bin/brave rc.d/ubuntu
+	rm -f bin/chrome bin/brave chroot/bin/chrome chroot/bin/brave rc.d/ubuntu
 }
 
 usage()
 {
 	echo "Usage: $0 install <brave|chrome|vivaldi>"
 	echo "       $0 deinstall <brave|chrome|vivaldi>"
-	echo "       $0 jail <create|upgrade|delete>"
+	echo "       $0 chroot <create|upgrade|delete>"
 	echo "       $0 symlink <icons|themes>"
 	echo "       $0 clean"
 	exit 1
@@ -323,7 +323,7 @@ while [ $# -gt 0 ]; do
 		brave|chrome|vivaldi)
 			browser=$2
 			build_scripts
-			install_jail_base
+			install_chroot_base
 			eval install_${browser}
 			;;
 		*)
@@ -349,19 +349,19 @@ while [ $# -gt 0 ]; do
 		cleanup
 		exit 0
 		;;
-	jail)
+	chroot|jail)
 		case $2 in
 		create)
 			build_scripts
-			install_jail_base
+			install_chroot_base
 			exit 0
 			;;
 		delete)
-			deinstall_jail_base
+			deinstall_chroot_base
 			exit 0
 			;;
 		upgrade)
-			upgrade_jail
+			upgrade_chroot
 			exit 0
 			;;
 		*)
