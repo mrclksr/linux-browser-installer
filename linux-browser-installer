@@ -71,7 +71,7 @@ install_steam_utils()
 {
 	pkg info --exists linux-steam-utils && return
 	pkg fetch -y -o /tmp linux-steam-utils || exit 1
-	(cd / && tar -xf /tmp/All/linux-steam-utils-*.txz \
+	(cd / && tar -xf /tmp/All/linux-steam-utils-*.pkg \
 		--exclude '^+COMPACT_MANIFEST' \
 		--exclude '^+MANIFEST')
 }
