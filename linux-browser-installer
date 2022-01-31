@@ -209,6 +209,38 @@ deinstall_vivaldi()
 	rm -f "${chroot_bindir}/vivaldi"
 }
 
+install_edge()
+{
+	if [ -x ${chroot_path}/opt/microsoft/msedge/microsoft-edge]; then
+		echo "Edge already installed" >&2
+		exit 1
+	fi
+	chroot ${chroot_path} /bin/bash -c \
+		"apt install -y apt-transport-https curl" || \
+		bail "'apt install -y apt-transport-https curl' failed"
+	chroot ${chroot_path} /bin/bash -c \
+		'curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | apt-key --keyring /etc/apt/trusted.gpg.d/microsoft.gpg add -' || \
+		bail "'curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | apt-key --keyring /etc/apt/trusted.gpg.d/microsoft.gpg add -' failed"
+	chroot ${chroot_path} /bin/bash -c \
+		'echo "deb [arch=amd64] https://packages.microsoft.com/repos/edge stable main" > /etc/apt/sources.list.d/microsoft-edge-stable.list'
+	chroot ${chroot_path} /bin/bash -c "apt update"
+	chroot ${chroot_path} /bin/bash -c "apt install -y microsoft-edge-stable" || \
+		bail "'apt install -y microsoft-edge-stable' failed"
+	[ -d "${chroot_path}/${prefix}/share/fonts" ] && \
+		rmdir "${chroot_path}/${prefix}/share/fonts"
+	install -m 555 chroot/bin/edge "${chroot_bindir}"
+	install -m 555 bin/linux-edge "${bindir}"
+	install -m 0644 linux-edge.desktop "${appsdir}"
+}
+
+deinstall_edge()
+{
+	chroot ${chroot_path} /bin/bash -c "apt remove -y microsoft-edge-stable"
+	rm -f "${appsdir}/linux-edge.desktop"
+	rm -f "${bindir}/linux-edge"
+	rm -f "${chroot_bindir}/edge"
+}
+
 symlink_icons()
 {
 	local name i
@@ -300,13 +332,18 @@ upgrade_chroot()
 
 cleanup()
 {
-	rm -f bin/chrome bin/brave chroot/bin/chrome chroot/bin/brave rc.d/ubuntu
+	browsers="brave chrome edge vivaldi"
+	for b in ${browsers}; do
+		rm -f "bin/linux-$b"
+		rm -f "chroot/bin/$b"
+	done
+	rm -f rc.d/ubuntu
 }
 
 usage()
 {
-	echo "Usage: $0 install <brave|chrome|vivaldi>"
-	echo "       $0 deinstall <brave|chrome|vivaldi>"
+	echo "Usage: $0 install <brave|chrome|edge|vivaldi>"
+	echo "       $0 deinstall <brave|chrome|edge|vivaldi>"
 	echo "       $0 chroot <create|upgrade|delete>"
 	echo "       $0 symlink <icons|themes>"
 	echo "       $0 clean"
@@ -324,7 +361,7 @@ while [ $# -gt 0 ]; do
 	case "$1" in
 	install)
 		case $2 in
-		brave|chrome|vivaldi)
+		brave|chrome|edge|vivaldi)
 			browser=$2
 			build_scripts
 			install_chroot_base
@@ -338,7 +375,7 @@ while [ $# -gt 0 ]; do
 		;;
 	deinstall)
 		case $2 in
-		brave|chrome|vivaldi)
+		brave|chrome|edge|vivaldi)
 			browser=$2
 			eval deinstall_${browser}
 			exit 0

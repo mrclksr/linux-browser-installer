@@ -13,7 +13,7 @@ filesystems.
 
 ### System requirements
 
-FreeBSD 12.2-RELEASE or 13-CURRENT
+FreeBSD 12.2-RELEASE or higher
 
 ### Please Note
 
@@ -43,12 +43,19 @@ and/or
 # ./linux-browser-installer install vivaldi
 ````
 
+and/or
+
+````
+# ./linux-browser-installer install edge
+````
+
 If the chroot is not existing yet, it will be created first.
 
-Run `/usr/local/bin/linux-chrome`, `/usr/local/bin/linux-brave`
-or `/usr/local/bin/linux-vivaldi` to start your installed browser.
+Run `/usr/local/bin/linux-chrome`, `/usr/local/bin/linux-brave`,
+`/usr/local/bin/linux-vivaldi`, or `/usr/local/bin/linux-edge`
+to start your installed browser.
 
-#### Deinstall Chrome, Brave or Vivaldi browser
+#### Deinstall Chrome, Brave, Edge or Vivaldi browser
 
 ````
 # ./linux-browser-installer deinstall chrome
@@ -64,6 +71,12 @@ and/or
 
 ````
 # ./linux-browser-installer deinstall vivaldi
+````
+
+and/or
+
+````
+# ./linux-browser-installer deinstall edge
 ````
 
 This command deinstalls the browser, and removes its wrapper
