@@ -36,7 +36,7 @@ $ cd linux-browser-installer
 
 Proceed as user root with the following steps.
 
-#### Install Chrome, Brave or Vivaldi browser
+#### Install Brave, Chrome, Edge or Vivaldi browser
 
 ````
 # ./linux-browser-installer install chrome
