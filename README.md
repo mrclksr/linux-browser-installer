@@ -1,7 +1,8 @@
 ### About
 
 *linux-browser-installer* is a Bourne shell script to install Linux versions of
-the Chrome, Brave or Vivaldi browsers under FreeBSD into a Linux (Ubuntu Focal) chroot.
+the Brave, Chrome, Edge, or Vivaldi browsers under FreeBSD into a Linux
+(Ubuntu Focal) chroot.
 They allow you to use web services like *Netflix*, *Prime Video*, or *Spotify*
 which require [Widevine](https://en.wikipedia.org/wiki/Widevine).
 The script is based on the excellent [Howto](https://forums.freebsd.org/threads/linuxulator-how-to-run-google-chrome-linux-binary-on-freebsd.77559/) by @[patovm04](https://github.com/patovm04).
@@ -25,6 +26,16 @@ default, set either (not both) `linux_enable="YES"` or `ubuntu_enable="YES"`
 in `/etc/rc.conf`.
 
 ### Usage
+
+Clone the repository and change to the `linux-browser-installer` directory.
+
+````
+$ git clone https://github.com/mrclksr/linux-browser-installer.git
+$ cd linux-browser-installer
+````
+
+Proceed as user root with the following steps.
+
 #### Install Chrome, Brave or Vivaldi browser
 
 ````
