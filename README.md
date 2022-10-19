@@ -1,7 +1,7 @@
 ### About
 
 *linux-browser-installer* is a Bourne shell script to install Linux versions of
-the Brave, Chrome, Edge, or Vivaldi browsers under FreeBSD into a Linux
+the Brave, Chrome, Edge, Opera or Vivaldi browsers under FreeBSD into a Linux
 (Ubuntu Focal) chroot.
 They allow you to use web services like *Netflix*, *Prime Video*, or *Spotify*
 which require [Widevine](https://en.wikipedia.org/wiki/Widevine).
@@ -36,7 +36,7 @@ $ cd linux-browser-installer
 
 Proceed as user root with the following steps.
 
-#### Install Brave, Chrome, Edge or Vivaldi browser
+#### Install Brave, Chrome, Edge, Opera or Vivaldi browser
 
 ````
 # ./linux-browser-installer install chrome
@@ -60,13 +60,19 @@ and/or
 # ./linux-browser-installer install edge
 ````
 
+and/or
+
+````
+# ./linux-browser-installer install opera
+````
+
 If the chroot is not existing yet, it will be created first.
 
 Run `/usr/local/bin/linux-chrome`, `/usr/local/bin/linux-brave`,
-`/usr/local/bin/linux-vivaldi`, or `/usr/local/bin/linux-edge`
+`/usr/local/bin/linux-vivaldi`, `/usr/local/bin/linux-opera`, or `/usr/local/bin/linux-edge`
 to start your installed browser.
 
-#### Deinstall Brave, Chrome, Edge or Vivaldi browser
+#### Deinstall Brave, Chrome, Edge, Opera or Vivaldi browser
 
 ````
 # ./linux-browser-installer deinstall chrome
@@ -88,6 +94,12 @@ and/or
 
 ````
 # ./linux-browser-installer deinstall edge
+````
+
+and/or
+
+````
+# ./linux-browser-installer deinstall opera
 ````
 
 This command deinstalls the browser, and removes its wrapper
