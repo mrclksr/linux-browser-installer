@@ -245,7 +245,7 @@ deinstall_edge()
 
 install_opera()
 {
-	if [ -x ${chroot_path}/usr/lib/x86_64-linux-gnu/opera/opera]; then
+	if [ -x ${chroot_path}/usr/lib/x86_64-linux-gnu/opera/opera ]; then
 		echo "Opera is already installed" >&2
 		exit 1
 	fi
