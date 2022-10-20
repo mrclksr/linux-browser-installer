@@ -21,6 +21,8 @@ chroot_mount_points="
 /tmp
 "
 
+export DEBIAN_FRONTEND=noninteractive
+
 bail()
 {
 	if [ $# -gt 0 ]; then
