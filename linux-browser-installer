@@ -3,7 +3,6 @@
 prefix=/usr/local
 chroot_path=/compat/ubuntu
 ubuntu_version=focal
-ld_version=2.31
 
 bindir="${prefix}/bin"
 appsdir="${prefix}/share/applications"
@@ -92,11 +91,18 @@ install_packages()
 
 fix_ld_path()
 {
-	(cd ${chroot_path}/lib64 && \
-		(unlink ./ld-linux-x86-64.so.2; \
-			ln -s ../lib/x86_64-linux-gnu/ld-${ld_version}.so \
-			ld-linux-x86-64.so.2))
+	local lib
+
+	for lib in ${chroot_path}/lib/x86_64-linux-gnu/ld-*; do
+		if [ ! -L ${lib} ]; then
+			[ -L ${chroot_path}/lib64/ld-linux-x86-64.so.2 ] && \
+				unlink ${chroot_path}/lib64/ld-linux-x86-64.so.2
+			cp ${lib} ${chroot_path}/lib64/ld-linux-x86-64.so.2
+			return
+		fi
+	done
 }
+
 
 install_apt_packages()
 {
@@ -332,6 +338,12 @@ install_chroot_base()
 		${chroot_path}/etc/apt/apt.conf.d/00aptitude
 	echo "deb http://archive.ubuntu.com/ubuntu/ ${ubuntu_version} " \
 	     "main restricted universe multiverse" > \
+		${chroot_path}/etc/apt/sources.list
+	echo "deb http://archive.ubuntu.com/ubuntu/ ${ubuntu_version}-updates " \
+	     "main restricted universe multiverse" >> \
+		${chroot_path}/etc/apt/sources.list
+	echo "deb http://archive.ubuntu.com/ubuntu/ ${ubuntu_version}-security " \
+	     "main restricted universe multiverse" >> \
 		${chroot_path}/etc/apt/sources.list
 	fix_ld_path
 	set_timezone
