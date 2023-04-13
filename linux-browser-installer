@@ -138,7 +138,7 @@ install_chrome()
 	chroot ${chroot_path} /bin/bash -c "apt install -y google-chrome-stable" || \
 		bail "'apt install -y google-chrome-stable' failed"
 	[ -d "${chroot_path}/${prefix}/share/fonts" ] && \
-		rmdir "${chroot_path}/${prefix}/share/fonts"
+		rm -rf "${chroot_path}/${prefix}/share/fonts"
 	install -m 555 chroot/bin/chrome "${chroot_bindir}"
 	install -m 555 bin/linux-chrome "${bindir}"
 	install -m 0644 linux-chrome.desktop "${appsdir}"
