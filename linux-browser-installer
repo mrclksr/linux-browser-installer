@@ -171,7 +171,7 @@ install_brave()
 	chroot ${chroot_path} /bin/bash -c "apt install -y brave-browser" || \
 		bail "'apt install -y brave-browser' failed"
 	[ -d "${chroot_path}/${prefix}/share/fonts" ] && \
-		rmdir "${chroot_path}/${prefix}/share/fonts"
+		rm -rf "${chroot_path}/${prefix}/share/fonts"
 	install -m 555 chroot/bin/brave "${chroot_bindir}"
 	install -m 555 bin/linux-brave "${bindir}"
 	install -m 0644 linux-brave.desktop "${appsdir}"
@@ -202,7 +202,7 @@ install_vivaldi()
 	chroot ${chroot_path} /bin/bash -c "apt install -y vivaldi-stable" || \
 		bail "'apt install -y vivaldi-stable' failed"
 	[ -d "${chroot_path}/${prefix}/share/fonts" ] && \
-		rmdir "${chroot_path}/${prefix}/share/fonts"
+		rm -rf "${chroot_path}/${prefix}/share/fonts"
 	install -m 555 chroot/bin/vivaldi "${chroot_bindir}"
 	install -m 555 bin/linux-vivaldi "${bindir}"
 	install -m 0644 linux-vivaldi.desktop "${appsdir}"
@@ -235,7 +235,7 @@ install_edge()
 	chroot ${chroot_path} /bin/bash -c "apt install -y microsoft-edge-stable" || \
 		bail "'apt install -y microsoft-edge-stable' failed"
 	[ -d "${chroot_path}/${prefix}/share/fonts" ] && \
-		rmdir "${chroot_path}/${prefix}/share/fonts"
+		rm -rf "${chroot_path}/${prefix}/share/fonts"
 	install -m 555 chroot/bin/edge "${chroot_bindir}"
 	install -m 555 bin/linux-edge "${bindir}"
 	install -m 0644 linux-edge.desktop "${appsdir}"
@@ -267,7 +267,7 @@ install_opera()
 	chroot ${chroot_path} /bin/bash -c "apt install -y opera-stable" || \
 		bail "'apt install -y opera-stable' failed"
 	[ -d "${chroot_path}/${prefix}/share/fonts" ] && \
-		rmdir "${chroot_path}/${prefix}/share/fonts"
+		rm -rf "${chroot_path}/${prefix}/share/fonts"
 	install -m 555 chroot/bin/opera "${chroot_bindir}"
 	install -m 555 bin/linux-opera "${bindir}"
 	install -m 0644 linux-opera.desktop "${appsdir}"
