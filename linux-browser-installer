@@ -374,6 +374,7 @@ upgrade_chroot()
 	local flags="-q -y --allow-downgrades"
 	flags="${flags} --allow-remove-essential --allow-change-held-packages"
 	chroot ${chroot_path} /bin/bash -c "apt-get update && apt upgrade ${flags}"
+	fix_ld_path
 }
 
 cleanup()
