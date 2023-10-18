@@ -351,6 +351,8 @@ install_chroot_base()
 	install_apt_packages
 	symlink_icons
 	symlink_themes
+	# Accessing the dbus socket doesn't work if /var/run is a symlink
+	[ -L ${chroot_path}/var/run ] && unlink ${chroot_path}/var/run
 }
 
 deinstall_chroot_base()
