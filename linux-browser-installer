@@ -8,7 +8,7 @@ bindir="${prefix}/bin"
 appsdir="${prefix}/share/applications"
 chroot_bindir="${chroot_path}/bin"
 
-apt_packages="gnupg pulseaudio"
+apt_packages="gnupg pulseaudio ca-certificates"
 pkg_list="debootstrap pulseaudio"
 
 chroot_mount_points="
@@ -112,6 +112,11 @@ install_apt_packages()
 		chroot ${chroot_path} /bin/bash -c "apt install -y $p" || \
 			bail "'apt install -y $p' failed"
 	done
+}
+
+install_certs()
+{
+	chroot ${chroot_path} /bin/bash -c "apt install -y ca-certificates"
 }
 
 build_scripts()
@@ -414,6 +419,7 @@ while [ $# -gt 0 ]; do
 			browser=$2
 			build_scripts
 			install_chroot_base
+			install_certs
 			eval install_${browser}
 			;;
 		*)
