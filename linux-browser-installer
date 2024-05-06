@@ -126,6 +126,25 @@ build_scripts()
 	done
 }
 
+create_dir()
+{
+	local dir_name=$1
+	[ ! -d "${dir_name}" ] && mkdir -p "${dir_name}"
+}
+
+install_browser_files()
+{
+	local browser_name=$1
+
+	for d in "${chroot_bindir}" "${bindir}" "${appsdir}"; do
+		create_dir "$d"
+	done
+	install -m 555 chroot/bin/${browser_name} "${chroot_bindir}"
+	install -m 555 bin/linux-${browser_name} "${bindir}"
+	install -m 0644 linux-${browser_name}.desktop "${appsdir}"
+
+}
+
 install_chrome()
 {
 	if [ -x ${chroot_path}/opt/google/chrome/chrome ]; then
@@ -144,9 +163,7 @@ install_chrome()
 		bail "'apt install -y google-chrome-stable' failed"
 	[ -d "${chroot_path}/${prefix}/share/fonts" ] && \
 		rmdir "${chroot_path}/${prefix}/share/fonts"
-	install -m 555 chroot/bin/chrome "${chroot_bindir}"
-	install -m 555 bin/linux-chrome "${bindir}"
-	install -m 0644 linux-chrome.desktop "${appsdir}"
+	install_browser_files chrome
 }
 
 deinstall_chrome()
@@ -177,9 +194,7 @@ install_brave()
 		bail "'apt install -y brave-browser' failed"
 	[ -d "${chroot_path}/${prefix}/share/fonts" ] && \
 		rmdir "${chroot_path}/${prefix}/share/fonts"
-	install -m 555 chroot/bin/brave "${chroot_bindir}"
-	install -m 555 bin/linux-brave "${bindir}"
-	install -m 0644 linux-brave.desktop "${appsdir}"
+	install_browser_files brave
 }
 
 deinstall_brave()
@@ -208,9 +223,7 @@ install_vivaldi()
 		bail "'apt install -y vivaldi-stable' failed"
 	[ -d "${chroot_path}/${prefix}/share/fonts" ] && \
 		rmdir "${chroot_path}/${prefix}/share/fonts"
-	install -m 555 chroot/bin/vivaldi "${chroot_bindir}"
-	install -m 555 bin/linux-vivaldi "${bindir}"
-	install -m 0644 linux-vivaldi.desktop "${appsdir}"
+	install_browser_files vivaldi
 }
 
 deinstall_vivaldi()
@@ -241,9 +254,7 @@ install_edge()
 		bail "'apt install -y microsoft-edge-stable' failed"
 	[ -d "${chroot_path}/${prefix}/share/fonts" ] && \
 		rmdir "${chroot_path}/${prefix}/share/fonts"
-	install -m 555 chroot/bin/edge "${chroot_bindir}"
-	install -m 555 bin/linux-edge "${bindir}"
-	install -m 0644 linux-edge.desktop "${appsdir}"
+	install_browser_files edge
 }
 
 deinstall_edge()
@@ -273,9 +284,7 @@ install_opera()
 		bail "'apt install -y opera-stable' failed"
 	[ -d "${chroot_path}/${prefix}/share/fonts" ] && \
 		rmdir "${chroot_path}/${prefix}/share/fonts"
-	install -m 555 chroot/bin/opera "${chroot_bindir}"
-	install -m 555 bin/linux-opera "${bindir}"
-	install -m 0644 linux-opera.desktop "${appsdir}"
+	install_browser_files opera
 }
 
 deinstall_opera()
