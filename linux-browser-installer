@@ -121,9 +121,26 @@ install_certs()
 
 build_scripts()
 {
-	for s in $(find bin chroot/bin rc.d -name "*.in"); do
+	for s in $(find bin rc.d -name "*.in"); do
 		sed -E "s#@CHROOT_PATH@#${chroot_path}#g" < $s > ${s%.in}
 	done
+}
+
+install_chroot_wrapper()
+{
+	local name=$1
+	local chrome="chrome:/opt/google/chrome"
+	local vivaldi="vivaldi:/opt/vivaldi/vivaldi"
+	local brave="brave:/opt/brave.com/brave"
+	local opera="opera:/usr/lib/x86_64-linux-gnu/opera"
+	local edge="microsoft-edge:/opt/microsoft/msedge"
+
+	eval content=\$${name}
+	local binary="${content%%:*}"
+	local browser_path="${content##*:}"
+	sed -E "s|@BROWSER@|${binary}|g;s|@BROWSER_PATH@|${browser_path}|g" \
+	  < chroot_wrapper.tmpl > ${chroot_bindir}/${name}
+	chmod 555 ${chroot_bindir}/${name}
 }
 
 create_dir()
@@ -139,10 +156,9 @@ install_browser_files()
 	for d in "${chroot_bindir}" "${bindir}" "${appsdir}"; do
 		create_dir "$d"
 	done
-	install -m 555 chroot/bin/${browser_name} "${chroot_bindir}"
+	install_chroot_wrapper ${browser_name}
 	install -m 555 bin/linux-${browser_name} "${bindir}"
 	install -m 0644 linux-${browser_name}.desktop "${appsdir}"
-
 }
 
 install_chrome()
