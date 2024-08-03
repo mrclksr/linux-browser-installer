@@ -128,7 +128,7 @@ install_chroot_wrapper()
 	local binary="${content%%:*}"
 	local browser_path="${content##*:}"
 	sed -E "s|@BROWSER@|${binary}|g;s|@BROWSER_PATH@|${browser_path}|g" \
-	  < chroot_wrapper.tmpl > ${chroot_bindir}/${name}
+	  < chroot-wrapper.tmpl > ${chroot_bindir}/${name}
 	chmod 555 ${chroot_bindir}/${name}
 }
 
