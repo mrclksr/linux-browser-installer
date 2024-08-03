@@ -71,19 +71,6 @@ install_rc()
 	chmod 555 ${target}
 }
 
-install_steam_utils()
-{
-	pkg info --exists linux-steam-utils && return
-	pkg fetch -y -o /tmp linux-steam-utils || exit 1
-
-	pkgpath=/tmp/All/linux-steam-utils-*.pkg
-	[ ! -f ${pkgpath} ] && pkgpath=/tmp/All/linux-steam-utils-*.txz
-	[ ! -f ${pkgpath} ] && exit 1
-	(cd / && tar -xf ${pkgpath} \
-		--exclude '^+COMPACT_MANIFEST' \
-		--exclude '^+MANIFEST')
-}
-
 install_packages()
 {
 	for p in ${pkg_list}; do
@@ -367,7 +354,6 @@ install_chroot_base()
 	sysrc linux_enable=NO
 	sysrc ubuntu_enable=YES
 	service ubuntu start || bail "Failed to start ubuntu service"
-	install_steam_utils
 	install_packages
 	debootstrap --arch=amd64 --no-check-gpg ${ubuntu_version} ${chroot_path} || \
 		bail "debootstrap failed"
