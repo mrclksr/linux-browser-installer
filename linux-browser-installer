@@ -115,11 +115,6 @@ install_starter()
 	chmod 555 ${target}
 }
 
-install_certs()
-{
-	chroot ${chroot_path} /bin/bash -c "apt install -y ca-certificates"
-}
-
 install_chroot_wrapper()
 {
 	local name=$1
@@ -436,7 +431,6 @@ while [ $# -gt 0 ]; do
 		brave|chrome|edge|vivaldi|opera)
 			browser=$2
 			install_chroot_base
-			install_certs
 			eval install_${browser}
 			;;
 		*)
