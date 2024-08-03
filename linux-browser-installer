@@ -119,7 +119,7 @@ install_chroot_wrapper()
 {
 	local name=$1
 	local chrome="chrome:/opt/google/chrome"
-	local vivaldi="vivaldi:/opt/vivaldi/vivaldi"
+	local vivaldi="vivaldi:/opt/vivaldi"
 	local brave="brave:/opt/brave.com/brave"
 	local opera="opera:/usr/lib/x86_64-linux-gnu/opera"
 	local edge="microsoft-edge:/opt/microsoft/msedge"
