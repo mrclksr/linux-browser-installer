@@ -138,6 +138,14 @@ create_dir()
 	[ ! -d "${dir_name}" ] && mkdir -p "${dir_name}"
 }
 
+remove_empty_dirs()
+{
+	for d in ${prefix}/share/fonts; do
+		[ -d "${chroot_path}/$d" ] && \
+			rmdir "${chroot_path}/$d"
+	done
+}
+
 install_browser_files()
 {
 	local browser_name=$1
@@ -166,8 +174,6 @@ install_chrome()
 	chroot ${chroot_path} /bin/bash -c "apt update"
 	chroot ${chroot_path} /bin/bash -c "apt install -y google-chrome-stable" || \
 		bail "'apt install -y google-chrome-stable' failed"
-	[ -d "${chroot_path}/${prefix}/share/fonts" ] && \
-		rmdir "${chroot_path}/${prefix}/share/fonts"
 	install_browser_files chrome
 }
 
@@ -194,8 +200,6 @@ install_brave()
 	chroot ${chroot_path} /bin/bash -c "apt update"
 	chroot ${chroot_path} /bin/bash -c "apt install -y brave-browser" || \
 		bail "'apt install -y brave-browser' failed"
-	[ -d "${chroot_path}/${prefix}/share/fonts" ] && \
-		rmdir "${chroot_path}/${prefix}/share/fonts"
 	install_browser_files brave
 }
 
@@ -223,8 +227,6 @@ install_vivaldi()
 	chroot ${chroot_path} /bin/bash -c "apt update"
 	chroot ${chroot_path} /bin/bash -c "apt install -y vivaldi-stable" || \
 		bail "'apt install -y vivaldi-stable' failed"
-	[ -d "${chroot_path}/${prefix}/share/fonts" ] && \
-		rmdir "${chroot_path}/${prefix}/share/fonts"
 	install_browser_files vivaldi
 }
 
@@ -251,8 +253,6 @@ install_edge()
 	chroot ${chroot_path} /bin/bash -c "apt update"
 	chroot ${chroot_path} /bin/bash -c "apt install -y microsoft-edge-stable" || \
 		bail "'apt install -y microsoft-edge-stable' failed"
-	[ -d "${chroot_path}/${prefix}/share/fonts" ] && \
-		rmdir "${chroot_path}/${prefix}/share/fonts"
 	install_browser_files edge
 }
 
@@ -278,8 +278,6 @@ install_opera()
 	chroot ${chroot_path} /bin/bash -c "apt update"
 	chroot ${chroot_path} /bin/bash -c "apt install -y opera-stable" || \
 		bail "'apt install -y opera-stable' failed"
-	[ -d "${chroot_path}/${prefix}/share/fonts" ] && \
-		rmdir "${chroot_path}/${prefix}/share/fonts"
 	install_browser_files opera
 }
 
@@ -423,6 +421,7 @@ while [ $# -gt 0 ]; do
 			browser=$2
 			install_chroot_base
 			eval install_${browser}
+			remove_empty_dirs
 			;;
 		*)
 			usage
