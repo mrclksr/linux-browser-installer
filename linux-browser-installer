@@ -8,7 +8,7 @@ bindir="${prefix}/bin"
 appsdir="${prefix}/share/applications"
 chroot_bindir="${chroot_path}/bin"
 
-apt_packages="gnupg pulseaudio ca-certificates"
+apt_packages="gnupg pulseaudio ca-certificates apt-transport-https curl"
 pkg_list="debootstrap pulseaudio"
 
 chroot_mount_points="
@@ -187,9 +187,6 @@ install_brave()
 		exit 1
 	fi
 	chroot ${chroot_path} /bin/bash -c \
-		"apt install -y apt-transport-https curl" || \
-		bail "'apt install -y apt-transport-https curl' failed"
-	chroot ${chroot_path} /bin/bash -c \
 		'curl -s https://brave-browser-apt-release.s3.brave.com/brave-core.asc | apt-key --keyring /etc/apt/trusted.gpg.d/brave-browser-release.gpg add -' || \
 		bail "'curl -s https://brave-browser-apt-release.s3.brave.com/brave-core.asc | apt-key --keyring /etc/apt/trusted.gpg.d/brave-browser-release.gpg add -' failed"
 	chroot ${chroot_path} /bin/bash -c \
@@ -247,9 +244,6 @@ install_edge()
 		exit 1
 	fi
 	chroot ${chroot_path} /bin/bash -c \
-		"apt install -y apt-transport-https curl" || \
-		bail "'apt install -y apt-transport-https curl' failed"
-	chroot ${chroot_path} /bin/bash -c \
 		'curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | apt-key --keyring /etc/apt/trusted.gpg.d/microsoft.gpg add -' || \
 		bail "'curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | apt-key --keyring /etc/apt/trusted.gpg.d/microsoft.gpg add -' failed"
 	chroot ${chroot_path} /bin/bash -c \
@@ -276,9 +270,6 @@ install_opera()
 		echo "Opera is already installed" >&2
 		exit 1
 	fi
-	chroot ${chroot_path} /bin/bash -c \
-		"apt install -y apt-transport-https curl" || \
-		bail "'apt install -y apt-transport-https curl' failed"
 	chroot ${chroot_path} /bin/bash -c \
 		'curl https://deb.opera.com/archive.key | apt-key add -' || \
 		bail "'curl https://deb.opera.com/archive.key | apt-key add -' failed"
