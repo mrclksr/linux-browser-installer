@@ -21,5 +21,5 @@ if [ ! -S "$PA_SOCK_PATH" ]; then
 	get_pa_sock_path
 fi
 [ -S "$PA_SOCK_PATH" ] && export PULSE_SERVER=unix:$PA_SOCK_PATH
-${chroot_path}/bin/vivaldi
+${chroot_path}/bin/@BROWSER@
 

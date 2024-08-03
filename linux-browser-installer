@@ -65,7 +65,10 @@ umount_chroot()
 
 install_rc()
 {
-	install -m 555 rc.d/ubuntu "${prefix}/etc/rc.d"
+	local tmpl="rc.d/ubuntu.in"
+	local target="${prefix}/etc/rc.d/ubuntu"
+	sed -E "s#@CHROOT_PATH@#${chroot_path}#g" < ${tmpl} > ${target}
+	chmod 555 ${target}
 }
 
 install_steam_utils()
@@ -114,16 +117,20 @@ install_apt_packages()
 	done
 }
 
+install_starter()
+{
+	local browser_name=$1
+	local tmpl="starter.tmpl"
+	local target="${bindir}/linux-${browser_name}"
+
+	sed -E "s#@CHROOT_PATH@#${chroot_path}#g;s#@BROWSER@#${browser_name}#g;" \
+		< ${tmpl} > ${target}
+	chmod 555 ${target}
+}
+
 install_certs()
 {
 	chroot ${chroot_path} /bin/bash -c "apt install -y ca-certificates"
-}
-
-build_scripts()
-{
-	for s in $(find bin rc.d -name "*.in"); do
-		sed -E "s#@CHROOT_PATH@#${chroot_path}#g" < $s > ${s%.in}
-	done
 }
 
 install_chroot_wrapper()
@@ -157,7 +164,7 @@ install_browser_files()
 		create_dir "$d"
 	done
 	install_chroot_wrapper ${browser_name}
-	install -m 555 bin/linux-${browser_name} "${bindir}"
+	install_starter ${browser_name}
 	install -m 0644 linux-${browser_name}.desktop "${appsdir}"
 }
 
@@ -442,7 +449,6 @@ while [ $# -gt 0 ]; do
 		case $2 in
 		brave|chrome|edge|vivaldi|opera)
 			browser=$2
-			build_scripts
 			install_chroot_base
 			install_certs
 			eval install_${browser}
