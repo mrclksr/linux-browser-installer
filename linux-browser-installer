@@ -65,7 +65,7 @@ umount_chroot()
 
 install_rc()
 {
-	local tmpl="rc.d/ubuntu.in"
+	local tmpl="rc-ubuntu.tmpl"
 	local target="${prefix}/etc/rc.d/ubuntu"
 	sed -E "s#@CHROOT_PATH@#${chroot_path}#g" < ${tmpl} > ${target}
 	chmod 555 ${target}
@@ -386,23 +386,12 @@ upgrade_chroot()
 	fix_ld_path
 }
 
-cleanup()
-{
-	browsers="brave chrome edge vivaldi opera"
-	for b in ${browsers}; do
-		rm -f "bin/linux-$b"
-		rm -f "chroot/bin/$b"
-	done
-	rm -f rc.d/ubuntu
-}
-
 usage()
 {
 	echo "Usage: $0 install <brave|chrome|edge|vivaldi|opera>"
 	echo "       $0 deinstall <brave|chrome|edge|vivaldi|opera>"
 	echo "       $0 chroot <create|upgrade|delete>"
 	echo "       $0 symlink <icons|themes>"
-	echo "       $0 clean"
 	exit 1
 }
 
@@ -441,10 +430,6 @@ while [ $# -gt 0 ]; do
 			;;
 		esac
 		shift
-		;;
-	clean)
-		cleanup
-		exit 0
 		;;
 	chroot|jail)
 		case $2 in

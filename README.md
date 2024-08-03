@@ -153,8 +153,3 @@ to make them available to applications in the chroot.
 This command updates the symlinks from `$prefix/share/themes` to
 `$chroot_path/usr/share/themes`. Use this after installing new themes
 to make them available to applications in the chroot.
-
-#### Delete working files from current directory
-````
-# ./linux-browser-installer clean
-````
