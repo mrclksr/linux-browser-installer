@@ -434,7 +434,6 @@ while [ $# -gt 0 ]; do
 	chroot|jail)
 		case $2 in
 		create)
-			build_scripts
 			install_chroot_base
 			exit 0
 			;;
