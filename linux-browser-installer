@@ -1,5 +1,24 @@
 #!/bin/sh
 
+# <browser name>:<chroot binary path>
+browser_list=$(cat << END
+chrome:/opt/google/chrome/chrome
+vivaldi:/opt/vivaldi/vivaldi
+brave:/opt/brave.com/brave/brave
+opera:/usr/lib/x86_64-linux-gnu/opera/opera
+edge:/opt/microsoft/msedge/microsoft-edge
+END
+)
+
+chroot_mount_points="
+/proc
+/sys
+/dev
+/dev/fd
+/dev/shm
+/tmp
+"
+
 prefix=/usr/local
 chroot_path=/compat/ubuntu
 ubuntu_version=focal
@@ -10,15 +29,6 @@ chroot_bindir="${chroot_path}/bin"
 
 apt_packages="gnupg pulseaudio ca-certificates apt-transport-https curl"
 pkg_list="debootstrap pulseaudio"
-
-chroot_mount_points="
-/proc
-/sys
-/dev
-/dev/fd
-/dev/shm
-/tmp
-"
 
 export DEBIAN_FRONTEND=noninteractive
 
@@ -93,7 +103,6 @@ fix_ld_path()
 	done
 }
 
-
 install_apt_packages()
 {
 	chroot ${chroot_path} /bin/bash -c 'apt update'
@@ -117,19 +126,15 @@ install_starter()
 
 install_chroot_wrapper()
 {
-	local name=$1
-	local chrome="chrome:/opt/google/chrome"
-	local vivaldi="vivaldi:/opt/vivaldi"
-	local brave="brave:/opt/brave.com/brave"
-	local opera="opera:/usr/lib/x86_64-linux-gnu/opera"
-	local edge="microsoft-edge:/opt/microsoft/msedge"
+	local browser_name=$1
+	local binary_path=$(get_chroot_binary_path ${browser_name})
+	local binary_name=$(basename ${binary_path})
+	local binary_dir=$(dirname ${binary_path})
+	local target=${chroot_bindir}/${browser_name}
 
-	eval content=\$${name}
-	local binary="${content%%:*}"
-	local browser_path="${content##*:}"
-	sed -E "s|@BROWSER@|${binary}|g;s|@BROWSER_PATH@|${browser_path}|g" \
-	  < chroot-wrapper.tmpl > ${chroot_bindir}/${name}
-	chmod 555 ${chroot_bindir}/${name}
+	sed -E "s|@BROWSER@|${binary_name}|g;s|@BROWSER_PATH@|${binary_dir}|g" \
+	  < chroot-wrapper.tmpl > ${target}
+	chmod 555 ${target}
 }
 
 create_dir()
@@ -146,6 +151,19 @@ remove_empty_dirs()
 	done
 }
 
+get_chroot_binary_path()
+{
+	local key=$1
+	echo ${browser_list} | tr "${IFS}" '\n' | grep "${key}:" | cut -d: -f2
+}
+
+check_installed()
+{
+	local browser_name=$1
+	local path=$(get_chroot_binary_path ${browser_name})
+	[ -x ${chroot_path}/${path} ]
+}
+
 install_browser_files()
 {
 	local browser_name=$1
@@ -158,12 +176,16 @@ install_browser_files()
 	install -m 0644 linux-${browser_name}.desktop "${appsdir}"
 }
 
+deinstall_browser_files()
+{
+	local browser_name=$1
+	rm -f "${appsdir}/linux-${browser_name}.desktop"
+	rm -f "${bindir}/linux-${browser_name}"
+	rm -f "${chroot_bindir}/${browser_name}"
+}
+
 install_chrome()
 {
-	if [ -x ${chroot_path}/opt/google/chrome/chrome ]; then
-		echo "Chrome already installed" >&2
-		exit 1
-	fi
 	echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ " \
 	     "stable main" > \
 		"${chroot_path}/etc/apt/sources.list.d/google-chrome.list"
@@ -174,24 +196,16 @@ install_chrome()
 	chroot ${chroot_path} /bin/bash -c "apt update"
 	chroot ${chroot_path} /bin/bash -c "apt install -y google-chrome-stable" || \
 		bail "'apt install -y google-chrome-stable' failed"
-	install_browser_files chrome
 }
 
 deinstall_chrome()
 {
 	chroot ${chroot_path} /bin/bash -c "apt remove -y google-chrome-stable" || \
 		bail "'apt remove -y google-chrome-stable' failed"
-	rm -f "${appsdir}/linux-chrome.desktop"
-	rm -f "${bindir}/linux-chrome"
-	rm -f "${chroot_bindir}/chrome"
 }
 
 install_brave()
 {
-	if [ -x ${chroot_path}/opt/brave.com/brave/brave ]; then
-		echo "Brave already installed" >&2
-		exit 1
-	fi
 	chroot ${chroot_path} /bin/bash -c \
 		'curl -s https://brave-browser-apt-release.s3.brave.com/brave-core.asc | apt-key --keyring /etc/apt/trusted.gpg.d/brave-browser-release.gpg add -' || \
 		bail "'curl -s https://brave-browser-apt-release.s3.brave.com/brave-core.asc | apt-key --keyring /etc/apt/trusted.gpg.d/brave-browser-release.gpg add -' failed"
@@ -200,23 +214,15 @@ install_brave()
 	chroot ${chroot_path} /bin/bash -c "apt update"
 	chroot ${chroot_path} /bin/bash -c "apt install -y brave-browser" || \
 		bail "'apt install -y brave-browser' failed"
-	install_browser_files brave
 }
 
 deinstall_brave()
 {
 	chroot ${chroot_path} /bin/bash -c "apt remove -y brave-browser"
-	rm -f "${appsdir}/linux-brave.desktop"
-	rm -f "${bindir}/linux-brave"
-	rm -f "${chroot_bindir}/brave"
 }
 
 install_vivaldi()
 {
-	if [ -x ${chroot_path}/opt/vivaldi/vivaldi ]; then
-		echo "Vivaldi already installed" >&2
-		exit 1
-	fi
 	echo "deb [arch=amd64] https://repo.vivaldi.com/archive/deb/ " \
 	     "stable main" > \
 		"${chroot_path}/etc/apt/sources.list.d/vivaldi.list"
@@ -227,24 +233,16 @@ install_vivaldi()
 	chroot ${chroot_path} /bin/bash -c "apt update"
 	chroot ${chroot_path} /bin/bash -c "apt install -y vivaldi-stable" || \
 		bail "'apt install -y vivaldi-stable' failed"
-	install_browser_files vivaldi
 }
 
 deinstall_vivaldi()
 {
 	chroot ${chroot_path} /bin/bash -c "apt remove -y vivaldi-stable" || \
 		bail "'apt remove -y vivaldi-stable' failed"
-	rm -f "${appsdir}/linux-vivaldi.desktop"
-	rm -f "${bindir}/linux-vivaldi"
-	rm -f "${chroot_bindir}/vivaldi"
 }
 
 install_edge()
 {
-	if [ -x ${chroot_path}/opt/microsoft/msedge/microsoft-edge]; then
-		echo "Edge already installed" >&2
-		exit 1
-	fi
 	chroot ${chroot_path} /bin/bash -c \
 		'curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | apt-key --keyring /etc/apt/trusted.gpg.d/microsoft.gpg add -' || \
 		bail "'curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | apt-key --keyring /etc/apt/trusted.gpg.d/microsoft.gpg add -' failed"
@@ -253,23 +251,15 @@ install_edge()
 	chroot ${chroot_path} /bin/bash -c "apt update"
 	chroot ${chroot_path} /bin/bash -c "apt install -y microsoft-edge-stable" || \
 		bail "'apt install -y microsoft-edge-stable' failed"
-	install_browser_files edge
 }
 
 deinstall_edge()
 {
 	chroot ${chroot_path} /bin/bash -c "apt remove -y microsoft-edge-stable"
-	rm -f "${appsdir}/linux-edge.desktop"
-	rm -f "${bindir}/linux-edge"
-	rm -f "${chroot_bindir}/edge"
 }
 
 install_opera()
 {
-	if [ -x ${chroot_path}/usr/lib/x86_64-linux-gnu/opera/opera ]; then
-		echo "Opera is already installed" >&2
-		exit 1
-	fi
 	chroot ${chroot_path} /bin/bash -c \
 		'curl https://deb.opera.com/archive.key | apt-key add -' || \
 		bail "'curl https://deb.opera.com/archive.key | apt-key add -' failed"
@@ -278,15 +268,11 @@ install_opera()
 	chroot ${chroot_path} /bin/bash -c "apt update"
 	chroot ${chroot_path} /bin/bash -c "apt install -y opera-stable" || \
 		bail "'apt install -y opera-stable' failed"
-	install_browser_files opera
 }
 
 deinstall_opera()
 {
 	chroot ${chroot_path} /bin/bash -c "apt remove -y opera-stable"
-	rm -f "${appsdir}/linux-opera.desktop"
-	rm -f "${bindir}/linux-opera"
-	rm -f "${chroot_bindir}/opera"
 }
 
 symlink_icons()
@@ -386,6 +372,27 @@ upgrade_chroot()
 	fix_ld_path
 }
 
+install_browser()
+{
+	local browser_name=$1
+
+	if check_installed ${browser_name}; then
+		echo "${browser_name} already installed" >&2
+		exit 1
+	fi
+	install_chroot_base
+	eval install_${browser_name}
+	install_browser_files ${browser_name}
+	remove_empty_dirs
+}
+
+deinstall_browser()
+{
+	local browser_name=$1
+	eval deinstall_${browser_name}
+	deinstall_browser_files ${browser_name}
+}
+
 usage()
 {
 	echo "Usage: $0 install <brave|chrome|edge|vivaldi|opera>"
@@ -394,6 +401,7 @@ usage()
 	echo "       $0 symlink <icons|themes>"
 	exit 1
 }
+
 
 if [ $(id -u) -ne 0 ]; then
 	echo "This script must be run as root" 1>&2
@@ -408,9 +416,8 @@ while [ $# -gt 0 ]; do
 		case $2 in
 		brave|chrome|edge|vivaldi|opera)
 			browser=$2
-			install_chroot_base
-			eval install_${browser}
-			remove_empty_dirs
+			install_browser ${browser}
+			exit 0
 			;;
 		*)
 			usage
@@ -422,7 +429,7 @@ while [ $# -gt 0 ]; do
 		case $2 in
 		brave|chrome|edge|vivaldi|opera)
 			browser=$2
-			eval deinstall_${browser}
+			deinstall_browser ${browser}
 			exit 0
 			;;
 		*)
