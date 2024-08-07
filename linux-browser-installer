@@ -103,13 +103,31 @@ fix_ld_path()
 	done
 }
 
+do_chroot()
+{
+	local ignore_errors=0
+
+	while [ $# -gt 0 ]; do
+		case "$1" in
+		-i) ignore_errors=1
+			;;
+		-*) bail "do_chroot: Invalid flag '$1'"
+			;;
+		 *) break
+			;;
+		esac
+		shift
+	done
+	chroot ${chroot_path} /bin/bash -c "$*" && return 0
+	[ ${ignore_errors} -eq 0 ] && bail "Command '$*' failed"
+}
+
 install_apt_packages()
 {
-	chroot ${chroot_path} /bin/bash -c 'apt update'
-	chroot ${chroot_path} /bin/bash -c 'apt remove -y rsyslog'
+	do_chroot -i 'apt update'
+	do_chroot -i 'apt remove -y rsyslog'
 	for p in ${apt_packages}; do
-		chroot ${chroot_path} /bin/bash -c "apt install -y $p" || \
-			bail "'apt install -y $p' failed"
+		do_chroot "apt install -y $p"
 	done
 }
 
@@ -191,34 +209,29 @@ install_chrome()
 		"${chroot_path}/etc/apt/sources.list.d/google-chrome.list"
 	fetch -o ${chroot_path} \
 		https://dl.google.com/linux/linux_signing_key.pub || exit 1
-	chroot ${chroot_path} /bin/bash -c "apt-key add linux_signing_key.pub" || \
-		bail "'apt-key add linux_signing_key.pub' failed"
-	chroot ${chroot_path} /bin/bash -c "apt update"
-	chroot ${chroot_path} /bin/bash -c "apt install -y google-chrome-stable" || \
-		bail "'apt install -y google-chrome-stable' failed"
+	do_chroot "apt-key add linux_signing_key.pub"
+	do_chroot -i "apt update"
+	do_chroot "apt install -y google-chrome-stable"
 }
 
 deinstall_chrome()
 {
-	chroot ${chroot_path} /bin/bash -c "apt remove -y google-chrome-stable" || \
-		bail "'apt remove -y google-chrome-stable' failed"
+	do_chroot "apt remove -y google-chrome-stable"
 }
 
 install_brave()
 {
-	chroot ${chroot_path} /bin/bash -c \
-		'curl -s https://brave-browser-apt-release.s3.brave.com/brave-core.asc | apt-key --keyring /etc/apt/trusted.gpg.d/brave-browser-release.gpg add -' || \
-		bail "'curl -s https://brave-browser-apt-release.s3.brave.com/brave-core.asc | apt-key --keyring /etc/apt/trusted.gpg.d/brave-browser-release.gpg add -' failed"
-	chroot ${chroot_path} /bin/bash -c \
+	do_chroot \
+		'curl -s https://brave-browser-apt-release.s3.brave.com/brave-core.asc | apt-key --keyring /etc/apt/trusted.gpg.d/brave-browser-release.gpg add -'
+	do_chroot \
 		'echo "deb [arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main" > /etc/apt/sources.list.d/brave-browser-release.list'
-	chroot ${chroot_path} /bin/bash -c "apt update"
-	chroot ${chroot_path} /bin/bash -c "apt install -y brave-browser" || \
-		bail "'apt install -y brave-browser' failed"
+	do_chroot -i "apt update"
+	do_chroot "apt install -y brave-browser"
 }
 
 deinstall_brave()
 {
-	chroot ${chroot_path} /bin/bash -c "apt remove -y brave-browser"
+	do_chroot "apt remove -y brave-browser"
 }
 
 install_vivaldi()
@@ -228,51 +241,43 @@ install_vivaldi()
 		"${chroot_path}/etc/apt/sources.list.d/vivaldi.list"
 	fetch -o ${chroot_path} \
 		https://repo.vivaldi.com/archive/linux_signing_key.pub || exit 1
-	chroot ${chroot_path} /bin/bash -c "apt-key add linux_signing_key.pub" || \
-		bail "'apt-key add linux_signing_key.pub' failed"
-	chroot ${chroot_path} /bin/bash -c "apt update"
-	chroot ${chroot_path} /bin/bash -c "apt install -y vivaldi-stable" || \
-		bail "'apt install -y vivaldi-stable' failed"
+	do_chroot "apt-key add linux_signing_key.pub"
+	do_chroot -i "apt update"
+	do_chroot "apt install -y vivaldi-stable"
 }
 
 deinstall_vivaldi()
 {
-	chroot ${chroot_path} /bin/bash -c "apt remove -y vivaldi-stable" || \
-		bail "'apt remove -y vivaldi-stable' failed"
+	do_chroot "apt remove -y vivaldi-stable"
 }
 
 install_edge()
 {
-	chroot ${chroot_path} /bin/bash -c \
-		'curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | apt-key --keyring /etc/apt/trusted.gpg.d/microsoft.gpg add -' || \
-		bail "'curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | apt-key --keyring /etc/apt/trusted.gpg.d/microsoft.gpg add -' failed"
-	chroot ${chroot_path} /bin/bash -c \
+	do_chroot \
+		'curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | apt-key --keyring /etc/apt/trusted.gpg.d/microsoft.gpg add -'
+	do_chroot \
 		'echo "deb [arch=amd64] https://packages.microsoft.com/repos/edge stable main" > /etc/apt/sources.list.d/microsoft-edge-stable.list'
-	chroot ${chroot_path} /bin/bash -c "apt update"
-	chroot ${chroot_path} /bin/bash -c "apt install -y microsoft-edge-stable" || \
-		bail "'apt install -y microsoft-edge-stable' failed"
+	do_chroot -i "apt update"
+	do_chroot "apt install -y microsoft-edge-stable"
 }
 
 deinstall_edge()
 {
-	chroot ${chroot_path} /bin/bash -c "apt remove -y microsoft-edge-stable"
+	do_chroot "apt remove -y microsoft-edge-stable"
 }
 
 install_opera()
 {
-	chroot ${chroot_path} /bin/bash -c \
-		'curl https://deb.opera.com/archive.key | apt-key add -' || \
-		bail "'curl https://deb.opera.com/archive.key | apt-key add -' failed"
-	chroot ${chroot_path} /bin/bash -c \
+	do_chroot 'curl https://deb.opera.com/archive.key | apt-key add -'
+	do_chroot \
 		'echo "deb https://deb.opera.com/opera-stable/ stable non-free" > /etc/apt/sources.list.d/opera-stable.list'
-	chroot ${chroot_path} /bin/bash -c "apt update"
-	chroot ${chroot_path} /bin/bash -c "apt install -y opera-stable" || \
-		bail "'apt install -y opera-stable' failed"
+	do_chroot -i "apt update"
+	do_chroot "apt install -y opera-stable"
 }
 
 deinstall_opera()
 {
-	chroot ${chroot_path} /bin/bash -c "apt remove -y opera-stable"
+	do_chroot "apt remove -y opera-stable"
 }
 
 symlink_icons()
@@ -312,8 +317,7 @@ set_timezone()
 	rm -f ${chroot_path}/etc/localtime
 	ln -s "/usr/share/zoneinfo/$(cat /var/db/zoneinfo)" \
 		${chroot_path}/etc/localtime
-	chroot ${chroot_path} /bin/bash -c \
-		"dpkg-reconfigure --frontend noninteractive tzdata"
+	do_chroot -i "dpkg-reconfigure --frontend noninteractive tzdata"
 }
 
 install_chroot_base()
@@ -368,7 +372,7 @@ upgrade_chroot()
 {
 	local flags="-q -y --allow-downgrades"
 	flags="${flags} --allow-remove-essential --allow-change-held-packages"
-	chroot ${chroot_path} /bin/bash -c "apt-get update && apt upgrade ${flags}"
+	do_chroot "apt-get update && apt upgrade ${flags}"
 	fix_ld_path
 }
 
