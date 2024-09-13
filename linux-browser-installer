@@ -31,6 +31,7 @@ apt_packages="gnupg pulseaudio ca-certificates apt-transport-https curl"
 pkg_list="debootstrap pulseaudio"
 
 export DEBIAN_FRONTEND=noninteractive
+export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
 
 bail()
 {
