@@ -23,6 +23,7 @@ prefix=/usr/local
 chroot_path=/compat/ubuntu
 ubuntu_version=focal
 
+my_dir="$(dirname $(realpath $0))"
 bindir="${prefix}/bin"
 appsdir="${prefix}/share/applications"
 chroot_bindir="${chroot_path}/bin"
@@ -76,7 +77,7 @@ umount_chroot()
 
 install_rc()
 {
-	local tmpl="rc-ubuntu.tmpl"
+	local tmpl="${my_dir}/rc-ubuntu.tmpl"
 	local target="${prefix}/etc/rc.d/ubuntu"
 	sed -E "s#@CHROOT_PATH@#${chroot_path}#g" < ${tmpl} > ${target}
 	chmod 555 ${target}
@@ -135,7 +136,7 @@ install_apt_packages()
 install_starter()
 {
 	local browser_name=$1
-	local tmpl="starter.tmpl"
+	local tmpl="${my_dir}/starter.tmpl"
 	local target="${bindir}/linux-${browser_name}"
 
 	sed -E "s#@CHROOT_PATH@#${chroot_path}#g;s#@BROWSER@#${browser_name}#g;" \
@@ -152,7 +153,7 @@ install_chroot_wrapper()
 	local target=${chroot_bindir}/${browser_name}
 	[ -L ${target} ] && unlink -f ${target}
 	sed -E "s|@BROWSER@|${binary_name}|g;s|@BROWSER_PATH@|${binary_dir}|g" \
-	  < chroot-wrapper.tmpl > ${target}
+	  < ${my_dir}/chroot-wrapper.tmpl > ${target}
 	chmod 555 ${target}
 }
 
@@ -192,7 +193,7 @@ install_browser_files()
 	done
 	install_chroot_wrapper ${browser_name}
 	install_starter ${browser_name}
-	install -m 0644 linux-${browser_name}.desktop "${appsdir}"
+	install -m 0644 ${my_dir}/linux-${browser_name}.desktop "${appsdir}"
 }
 
 deinstall_browser_files()
