@@ -31,6 +31,7 @@ apt_packages="gnupg pulseaudio ca-certificates apt-transport-https curl"
 pkg_list="debootstrap pulseaudio"
 
 export DEBIAN_FRONTEND=noninteractive
+export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
 
 bail()
 {
@@ -149,7 +150,7 @@ install_chroot_wrapper()
 	local binary_name=$(basename ${binary_path})
 	local binary_dir=$(dirname ${binary_path})
 	local target=${chroot_bindir}/${browser_name}
-
+	[ -L ${target} ] && unlink -f ${target}
 	sed -E "s|@BROWSER@|${binary_name}|g;s|@BROWSER_PATH@|${binary_dir}|g" \
 	  < chroot-wrapper.tmpl > ${target}
 	chmod 555 ${target}
