@@ -333,15 +333,13 @@ install_chroot_base()
 		bail "debootstrap failed"
 	echo "APT::Cache-Start 251658240;" > \
 		${chroot_path}/etc/apt/apt.conf.d/00aptitude
-	echo "deb http://archive.ubuntu.com/ubuntu/ ${ubuntu_version} " \
-	     "main restricted universe multiverse" > \
-		${chroot_path}/etc/apt/sources.list
-	echo "deb http://archive.ubuntu.com/ubuntu/ ${ubuntu_version}-updates " \
-	     "main restricted universe multiverse" >> \
-		${chroot_path}/etc/apt/sources.list
-	echo "deb http://archive.ubuntu.com/ubuntu/ ${ubuntu_version}-security " \
-	     "main restricted universe multiverse" >> \
-		${chroot_path}/etc/apt/sources.list
+
+	:>${chroot_path}/etc/apt/sources.list
+	for x in "" "-updates" "-security"; do
+		echo "deb http://archive.ubuntu.com/ubuntu/ ${ubuntu_version}$x " \
+	    	 "main restricted universe multiverse" >> \
+			${chroot_path}/etc/apt/sources.list
+	done
 	fix_ld_path
 	set_timezone
 	service ubuntu start
