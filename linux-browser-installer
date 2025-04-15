@@ -311,14 +311,8 @@ symlink_themes()
 set_timezone()
 {
 	printf "0.0 0 0.0\n0\nUTC\n" > ${chroot_path}/etc/adjtime
-	if [ ! -d "${chroot_path}/etc/localtime" ]; then
-		mkdir -p "${chroot_path}/etc/localtime"
-	fi
-	cp /var/db/zoneinfo "${chroot_path}/etc/timezone" \
-		${chroot_path}/etc/localtime
-	rm -f ${chroot_path}/etc/localtime
-	ln -s "/usr/share/zoneinfo/$(cat /var/db/zoneinfo)" \
-		${chroot_path}/etc/localtime
+	cp "/usr/share/zoneinfo/$(cat /var/db/zoneinfo)" \
+	   ${chroot_path}/etc/localtime
 	do_chroot -i "dpkg-reconfigure --frontend noninteractive tzdata"
 }
 
