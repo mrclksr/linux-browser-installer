@@ -127,29 +127,3 @@ desktop file.
 Before deleting the entire chroot under `$chroot_path`, this command
 unmounts all the chroot's filesystems, deletes the rc script, and removes its
 variable(s) from `/etc/rc.conf`.
-
-#### Update symlinks
-- - -
-
-**Note**: Symlinks to files outside the chroot will not work when `chroot`'ing.
-
-- - -
-
-##### For icons
-
-````
-# ./linux-browser-installer symlink icons
-````
-
-This command updates the symlinks from `$prefix/share/icons` to
-`$chroot_path/usr/share/icons`. Use this after installing new icons
-to make them available to applications in the chroot.
-
-##### For themes
-````
-# ./linux-browser-installer symlink themes
-````
-
-This command updates the symlinks from `$prefix/share/themes` to
-`$chroot_path/usr/share/themes`. Use this after installing new themes
-to make them available to applications in the chroot.

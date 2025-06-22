@@ -163,14 +163,6 @@ create_dir()
 	[ ! -d "${dir_name}" ] && mkdir -p "${dir_name}"
 }
 
-remove_empty_dirs()
-{
-	for d in ${prefix}/share/fonts; do
-		[ -d "${chroot_path}/$d" ] && \
-			rmdir "${chroot_path}/$d"
-	done
-}
-
 get_chroot_binary_path()
 {
 	local key=$1
@@ -282,32 +274,6 @@ deinstall_opera()
 	do_chroot "apt remove -y opera-stable"
 }
 
-symlink_icons()
-{
-	local name i
-	[ ! -d ${chroot_path}/usr/share/icons ] && \
-		mkdir -p ${chroot_path}/usr/share/icons
-	for i in ${prefix}/share/icons/*; do
-		[ ! -d $i ] && continue
-		name=$(basename $i)
-		[ -e ${chroot_path}/usr/share/icons/${name} ] && continue
-		ln -s $i ${chroot_path}/usr/share/icons
-	done
-}
-
-symlink_themes()
-{
-	local name i
-	[ ! -d ${chroot_path}/usr/share/themes ] && \
-		mkdir -p ${chroot_path}/usr/share/themes
-	for i in ${prefix}/share/themes/*; do
-		[ ! -d $i ] && continue
-		name=$(basename $i)
-		[ -e ${chroot_path}/usr/share/themes/${name} ] && continue
-		ln -s $i ${chroot_path}/usr/share/themes
-	done
-}
-
 set_timezone()
 {
 	printf "0.0 0 0.0\n0\nUTC\n" > ${chroot_path}/etc/adjtime
@@ -340,8 +306,7 @@ install_chroot_base()
 	set_timezone
 	service ubuntu start
 	install_apt_packages
-	symlink_icons
-	symlink_themes
+
 	# Accessing the dbus socket doesn't work if /var/run is a symlink
 	[ -L ${chroot_path}/var/run ] && unlink ${chroot_path}/var/run
 }
@@ -381,7 +346,6 @@ install_browser()
 	install_chroot_base
 	eval install_${browser_name}
 	install_browser_files ${browser_name}
-	remove_empty_dirs
 }
 
 deinstall_browser()
@@ -396,7 +360,6 @@ usage()
 	echo "Usage: $0 install <brave|chrome|edge|vivaldi|opera>"
 	echo "       $0 deinstall <brave|chrome|edge|vivaldi|opera>"
 	echo "       $0 chroot <create|upgrade|delete>"
-	echo "       $0 symlink <icons|themes>"
 	exit 1
 }
 
@@ -456,22 +419,9 @@ while [ $# -gt 0 ]; do
 		esac
 		shift
 		;;
-	symlink)
-		case $2 in
-		icons|themes)
-			eval symlink_$2
-			exit 0
-			;;
-		*)
-			usage
-			;;
-		esac
-		shift
-		;;
 	*)
 		usage
 		;;
 	esac
 	shift
 done
-
