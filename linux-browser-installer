@@ -201,7 +201,7 @@ install_chrome()
 	echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ " \
 	     "stable main" > \
 		"${chroot_path}/etc/apt/sources.list.d/google-chrome.list"
-	fetch -o ${chroot_path} \
+	fetch -v -o ${chroot_path} \
 		https://dl.google.com/linux/linux_signing_key.pub || exit 1
 	do_chroot "apt-key add linux_signing_key.pub"
 	do_chroot -i "apt update"
@@ -216,7 +216,7 @@ deinstall_chrome()
 install_brave()
 {
 	do_chroot \
-		'curl -s https://brave-browser-apt-release.s3.brave.com/brave-core.asc | apt-key --keyring /etc/apt/trusted.gpg.d/brave-browser-release.gpg add -'
+		'curl -v -s https://brave-browser-apt-release.s3.brave.com/brave-core.asc | apt-key --keyring /etc/apt/trusted.gpg.d/brave-browser-release.gpg add -'
 	do_chroot \
 		'echo "deb [arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main" > /etc/apt/sources.list.d/brave-browser-release.list'
 	do_chroot -i "apt update"
@@ -233,7 +233,7 @@ install_vivaldi()
 	echo "deb [arch=amd64] https://repo.vivaldi.com/archive/deb/ " \
 	     "stable main" > \
 		"${chroot_path}/etc/apt/sources.list.d/vivaldi.list"
-	fetch -o ${chroot_path} \
+	fetch -v -o ${chroot_path} \
 		https://repo.vivaldi.com/archive/linux_signing_key.pub || exit 1
 	do_chroot "apt-key add linux_signing_key.pub"
 	do_chroot -i "apt update"
@@ -248,7 +248,7 @@ deinstall_vivaldi()
 install_edge()
 {
 	do_chroot \
-		'curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | apt-key --keyring /etc/apt/trusted.gpg.d/microsoft.gpg add -'
+		'curl -v https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | apt-key --keyring /etc/apt/trusted.gpg.d/microsoft.gpg add -'
 	do_chroot \
 		'echo "deb [arch=amd64] https://packages.microsoft.com/repos/edge stable main" > /etc/apt/sources.list.d/microsoft-edge-stable.list'
 	do_chroot -i "apt update"
@@ -262,7 +262,7 @@ deinstall_edge()
 
 install_opera()
 {
-	do_chroot 'curl https://deb.opera.com/archive.key | apt-key add -'
+	do_chroot 'curl -v https://deb.opera.com/archive.key | apt-key add -'
 	do_chroot \
 		'echo "deb https://deb.opera.com/opera-stable/ stable non-free" > /etc/apt/sources.list.d/opera-stable.list'
 	do_chroot -i "apt update"
