@@ -21,7 +21,7 @@ chroot_mount_points="
 
 prefix=/usr/local
 chroot_path=/compat/ubuntu
-ubuntu_version=focal
+ubuntu_version=noble
 
 my_dir="$(dirname $(realpath $0))"
 bindir="${prefix}/bin"
