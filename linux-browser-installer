@@ -198,80 +198,82 @@ deinstall_browser_files()
 
 install_chrome()
 {
-	echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ " \
-	     "stable main" > \
-		"${chroot_path}/etc/apt/sources.list.d/google-chrome.list"
-	fetch -v -o ${chroot_path} \
-		https://dl.google.com/linux/linux_signing_key.pub || exit 1
-	do_chroot "apt-key add linux_signing_key.pub"
-	do_chroot -i "apt update"
-	do_chroot "apt install -y google-chrome-stable"
+    do_chroot 'install -d -m 0755 /etc/apt/keyrings'
+    do_chroot 'rm -f /etc/apt/keyrings/google-chrome.gpg /etc/apt/sources.list.d/google-chrome.list'
+    do_chroot 'curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /etc/apt/keyrings/google-chrome.gpg'
+    do_chroot 'echo "deb [arch=amd64,arm64 signed-by=/etc/apt/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list'
+    do_chroot -i "apt update"
+    do_chroot "apt install -y google-chrome-stable"
 }
 
 deinstall_chrome()
 {
-	do_chroot "apt remove -y google-chrome-stable"
+    do_chroot "apt remove -y google-chrome-stable"
+    do_chroot 'rm -f /etc/apt/keyrings/google-chrome.gpg /etc/apt/sources.list.d/google-chrome.list'
 }
 
 install_brave()
 {
-	do_chroot \
-		'curl -v -s https://brave-browser-apt-release.s3.brave.com/brave-core.asc | apt-key --keyring /etc/apt/trusted.gpg.d/brave-browser-release.gpg add -'
-	do_chroot \
-		'echo "deb [arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main" > /etc/apt/sources.list.d/brave-browser-release.list'
-	do_chroot -i "apt update"
-	do_chroot "apt install -y brave-browser"
+    do_chroot 'install -d -m 0755 /etc/apt/keyrings'
+    do_chroot 'rm -f /usr/share/keyrings/brave-browser-archive-keyring.gpg /etc/apt/sources.list.d/brave-browser-release.sources'
+    do_chroot 'curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg'
+    do_chroot 'curl -fsSLo /etc/apt/sources.list.d/brave-browser-release.sources https://brave-browser-apt-release.s3.brave.com/brave-browser.sources'
+    do_chroot -i "apt update"
+    do_chroot "apt install -y brave-browser"
 }
 
 deinstall_brave()
 {
-	do_chroot "apt remove -y brave-browser"
+    do_chroot "apt remove -y brave-browser"
+    do_chroot 'rm -f /usr/share/keyrings/brave-browser-archive-keyring.gpg /etc/apt/sources.list.d/brave-browser-release.sources'
 }
 
 install_vivaldi()
 {
-	echo "deb [arch=amd64] https://repo.vivaldi.com/archive/deb/ " \
-	     "stable main" > \
-		"${chroot_path}/etc/apt/sources.list.d/vivaldi.list"
-	fetch -v -o ${chroot_path} \
-		https://repo.vivaldi.com/archive/linux_signing_key.pub || exit 1
-	do_chroot "apt-key add linux_signing_key.pub"
-	do_chroot -i "apt update"
-	do_chroot "apt install -y vivaldi-stable"
+    do_chroot 'install -d -m 0755 /etc/apt/keyrings'
+    do_chroot 'rm -f /etc/apt/keyrings/vivaldi.gpg /etc/apt/sources.list.d/vivaldi.list'
+    do_chroot 'curl -fsSL https://repo.vivaldi.com/archive/linux_signing_key.pub | gpg --dearmor -o /etc/apt/keyrings/vivaldi.gpg'
+    do_chroot 'echo "deb [arch=amd64,arm64 signed-by=/etc/apt/keyrings/vivaldi.gpg] https://repo.vivaldi.com/archive/deb/ stable main" > /etc/apt/sources.list.d/vivaldi.list'
+    do_chroot -i "apt update"
+    do_chroot "apt install -y vivaldi-stable"
 }
 
 deinstall_vivaldi()
 {
-	do_chroot "apt remove -y vivaldi-stable"
+    do_chroot "apt remove -y vivaldi-stable"
+    do_chroot 'rm -f /etc/apt/keyrings/vivaldi.gpg /etc/apt/sources.list.d/vivaldi.list'
 }
 
 install_edge()
 {
-	do_chroot \
-		'curl -v https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | apt-key --keyring /etc/apt/trusted.gpg.d/microsoft.gpg add -'
-	do_chroot \
-		'echo "deb [arch=amd64] https://packages.microsoft.com/repos/edge stable main" > /etc/apt/sources.list.d/microsoft-edge-stable.list'
-	do_chroot -i "apt update"
-	do_chroot "apt install -y microsoft-edge-stable"
+    do_chroot 'install -d -m 0755 /etc/apt/keyrings'
+    do_chroot 'rm -f /etc/apt/keyrings/microsoft.gpg /etc/apt/sources.list.d/microsoft-edge-stable.list'
+    do_chroot 'curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /etc/apt/keyrings/microsoft.gpg'
+    do_chroot 'echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/edge stable main" > /etc/apt/sources.list.d/microsoft-edge-stable.list'
+    do_chroot -i "apt update"
+    do_chroot "apt install -y microsoft-edge-stable"
 }
 
 deinstall_edge()
 {
-	do_chroot "apt remove -y microsoft-edge-stable"
+    do_chroot "apt remove -y microsoft-edge-stable"
+    do_chroot 'rm -f /etc/apt/keyrings/microsoft.gpg /etc/apt/sources.list.d/microsoft-edge-stable.list'
 }
 
 install_opera()
 {
-	do_chroot 'curl -v https://deb.opera.com/archive.key | apt-key add -'
-	do_chroot \
-		'echo "deb https://deb.opera.com/opera-stable/ stable non-free" > /etc/apt/sources.list.d/opera-stable.list'
-	do_chroot -i "apt update"
-	do_chroot "apt install -y opera-stable"
+    do_chroot 'install -d -m 0755 /etc/apt/keyrings'
+    do_chroot 'rm -f /etc/apt/keyrings/opera.gpg /etc/apt/sources.list.d/opera-stable.list'
+    do_chroot 'curl -fsSL https://deb.opera.com/archive.key | gpg --dearmor -o /etc/apt/keyrings/opera.gpg'
+    do_chroot 'echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/opera.gpg] https://deb.opera.com/opera-stable/ stable non-free" > /etc/apt/sources.list.d/opera-stable.list'
+    do_chroot -i "apt update"
+    do_chroot "apt install -y opera-stable"
 }
 
 deinstall_opera()
 {
-	do_chroot "apt remove -y opera-stable"
+    do_chroot "apt remove -y opera-stable"
+    do_chroot 'rm -f /etc/apt/keyrings/opera.gpg /etc/apt/sources.list.d/opera-stable.list'
 }
 
 set_timezone()
